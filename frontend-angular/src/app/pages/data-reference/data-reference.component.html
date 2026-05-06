@@ -1,0 +1,38 @@
+<div class="page-header">
+  <h1>🔖 Data Références</h1>
+  <p>Gestion des références commandes (# REF)</p>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:12px;margin-bottom:24px">
+    <input type="text" [(ngModel)]="newRef" placeholder="Nouvelle référence (ex: REF004)" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);outline:none;flex:1">
+    <button class="btn btn-primary" (click)="add()">+ Ajouter</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead><tr><th>#</th><th>Référence</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let r of refs; let i=index">
+          <td style="color:var(--text2)">{{i+1}}</td>
+          <td>
+            <span *ngIf="editRef !== r">
+              <code style="color:var(--accent);font-size:0.9rem;background:rgba(108,99,255,0.1);padding:4px 10px;border-radius:6px">{{r}}</code>
+            </span>
+            <input *ngIf="editRef === r" type="text" [(ngModel)]="editValue" (keyup.enter)="saveEdit(r)" style="background:var(--bg3);border:1px solid var(--accent);border-radius:8px;padding:6px 10px;color:var(--text);outline:none">
+          </td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button *ngIf="editRef !== r" class="btn btn-secondary btn-sm" (click)="startEdit(r)">✏️</button>
+              <button *ngIf="editRef === r" class="btn btn-primary btn-sm" (click)="saveEdit(r)">✅</button>
+              <button class="btn btn-danger btn-sm" (click)="delete(r)">🗑️</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="refs.length === 0">
+          <td colspan="3"><div class="empty-state"><div class="icon">🔖</div><h3>Aucune référence</h3></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

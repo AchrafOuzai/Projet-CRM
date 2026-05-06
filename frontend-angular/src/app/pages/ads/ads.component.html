@@ -1,0 +1,75 @@
+<div class="page-header">
+  <h1>📣 Campagnes Publicitaires</h1>
+  <p>Suivi et performance des campagnes Ads</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card danger"><div class="stat-label">Budget Total (DH)</div><div class="stat-value">{{totalDH | number}}</div></div>
+  <div class="stat-card accent"><div class="stat-label">Prospects</div><div class="stat-value">{{totalProspects | number}}</div></div>
+  <div class="stat-card warning"><div class="stat-label">Coût/Prospect (DH)</div><div class="stat-value">{{coutParProspect}}</div></div>
+  <div class="stat-card success"><div class="stat-label">Campagnes</div><div class="stat-value">{{ads.length}}</div></div>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-primary" (click)="openAdd()">+ Nouvelle campagne</button>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr><th>N°</th><th>Date</th><th>Produit</th><th>Objectif</th><th>Admin</th><th>Durée</th><th>Montant $</th><th>Montant DH</th><th>Prospects</th><th>Résultat</th><th>Éval</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let a of ads">
+        <td><code style="color:var(--accent)">{{a.numeroCampagne}}</code></td>
+        <td>{{a.date}}</td>
+        <td><strong>{{a.produit}}</strong></td>
+        <td><span class="badge confirmee">{{a.objetPublicitaire}}</span></td>
+        <td>{{a.admin}}</td>
+        <td>{{a.dureeJours}}j</td>
+        <td>{{a.montantDollars | number}}$</td>
+        <td style="color:var(--danger)">{{a.montantDH | number}} DH</td>
+        <td style="color:var(--info)">{{a.prospect}}</td>
+        <td>{{a.resultat}}</td>
+        <td>{{a.evaluation}}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" (click)="openEdit(a)">✏️</button>
+            <button class="btn btn-danger btn-sm" (click)="delete(a.id!)">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouvelle'}} campagne</h3>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>N° Campagne</label><input type="text" [(ngModel)]="form.numeroCampagne"></div>
+      <div class="form-group"><label>Date</label><input type="date" [(ngModel)]="form.date"></div>
+      <div class="form-group"><label>Produit</label><input type="text" [(ngModel)]="form.produit"></div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Objectif</label><select [(ngModel)]="form.objetPublicitaire"><option *ngFor="let o of objectifs" [value]="o">{{o}}</option></select></div>
+      <div class="form-group"><label>Admin</label><select [(ngModel)]="form.admin"><option *ngFor="let a of config.admins" [value]="a">{{a}}</option></select></div>
+      <div class="form-group"><label>Durée (jours)</label><input type="number" [(ngModel)]="form.dureeJours"></div>
+    </div>
+    <div class="form-row cols-4">
+      <div class="form-group"><label>Montant ($)</label><input type="number" [(ngModel)]="form.montantDollars"></div>
+      <div class="form-group"><label>Montant (DH)</label><input type="number" [(ngModel)]="form.montantDH"></div>
+      <div class="form-group"><label>Total ($)</label><input type="number" [(ngModel)]="form.totalDollars"></div>
+      <div class="form-group"><label>Total (DH)</label><input type="number" [(ngModel)]="form.totalDH"></div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Prospects</label><input type="number" [(ngModel)]="form.prospect"></div>
+      <div class="form-group"><label>Résultat</label><input type="text" [(ngModel)]="form.resultat"></div>
+      <div class="form-group"><label>Évaluation</label><select [(ngModel)]="form.evaluation"><option *ngFor="let e of evaluations" [value]="e">{{e}}</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>

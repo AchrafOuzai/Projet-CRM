@@ -1,0 +1,86 @@
+<div class="page-header">
+  <h1>🛍️ Produits</h1>
+  <p>Catalogue produits, prix et marges</p>
+</div>
+
+<div class="toolbar">
+  <div class="search-bar" style="flex:1;min-width:200px;margin:0">
+    <span>🔍</span>
+    <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Rechercher produit ou référence...">
+  </div>
+  <select [(ngModel)]="filterCat" (ngModelChange)="applyFilters()" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);outline:none">
+    <option value="">Toutes catégories</option>
+    <option *ngFor="let c of config.categoriesProduits" [value]="c">{{c}}</option>
+  </select>
+  <button class="btn btn-primary" (click)="openAdd()">+ Nouveau produit</button>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Réf</th><th>Désignation</th><th>Catégorie</th>
+        <th>Prix Achat</th><th>Prix Vente</th><th>2 Unités</th><th>3 Unités</th><th>4 Unités</th><th>5 Unités</th>
+        <th>Marge %</th><th>Stock</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let p of filtered">
+        <td><code style="color:var(--accent);font-size:0.78rem">{{p.reference}}</code></td>
+        <td><strong>{{p.designation}}</strong></td>
+        <td><span class="badge confirmee">{{p.categorie}}</span></td>
+        <td style="color:var(--danger)">{{p.prixAchat | number}} DH</td>
+        <td style="color:var(--success);font-weight:700">{{p.prixVente | number}} DH</td>
+        <td>{{p.prixVente2 | number}}</td><td>{{p.prixVente3 | number}}</td>
+        <td>{{p.prixVente4 | number}}</td><td>{{p.prixVente5 | number}}</td>
+        <td>
+          <span [style.color]="getMargin(p) > 50 ? 'var(--success)' : 'var(--warning)'">
+            {{getMargin(p)}}%
+          </span>
+        </td>
+        <td>
+          <span [style.color]="(p.stock||0) < 5 ? 'var(--danger)' : 'var(--text)'">{{p.stock || 0}}</span>
+        </td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" (click)="openEdit(p)">✏️</button>
+            <button class="btn btn-danger btn-sm" (click)="delete(p.id!)">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouveau'}} produit</h3>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Référence</label><input type="text" [(ngModel)]="form.reference"></div>
+      <div class="form-group"><label>Désignation</label><input type="text" [(ngModel)]="form.designation"></div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select [(ngModel)]="form.categorie">
+          <option *ngFor="let c of config.categoriesProduits" [value]="c">{{c}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Prix d'achat (DH)</label><input type="number" [(ngModel)]="form.prixAchat"></div>
+      <div class="form-group"><label>Stock</label><input type="number" [(ngModel)]="form.stock"></div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="form-group"><label>Prix vente (1 u)</label><input type="number" [(ngModel)]="form.prixVente"></div>
+      <div class="form-group"><label>Prix vente (2 u)</label><input type="number" [(ngModel)]="form.prixVente2"></div>
+      <div class="form-group"><label>Prix vente (3 u)</label><input type="number" [(ngModel)]="form.prixVente3"></div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group"><label>Prix vente (4 u)</label><input type="number" [(ngModel)]="form.prixVente4"></div>
+      <div class="form-group"><label>Prix vente (5 u)</label><input type="number" [(ngModel)]="form.prixVente5"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>

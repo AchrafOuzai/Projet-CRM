@@ -1,0 +1,77 @@
+<aside class="sidebar" [class.open]="menuOpen">
+  <div class="logo">
+    <h2>⚡ ShopCRM</h2>
+    <span>E-Commerce Manager</span>
+  </div>
+
+  <nav style="flex:1">
+
+    <!-- Dashboard -->
+    <div class="nav-group">
+      <a class="nav-item"
+         [class.active]="isActive('/dashboard')"
+         (click)="navigate('/dashboard')">
+        <span class="icon">📊</span>
+        Dashboard
+      </a>
+    </div>
+
+    <!-- Tiers -->
+    <div class="nav-group">
+      <a class="nav-item"
+         [class.active]="isActive('/tiers') || isActive('/contacts')"
+         (click)="toggleTiers()">
+        <span class="icon">🏢</span>
+        Tiers
+        <span class="arrow" [class.open]="tiersOpen">▶</span>
+      </a>
+      <div class="submenu" [class.open]="tiersOpen">
+        <a [class.active]="isActive('/tiers')" (click)="navigate('/tiers')">
+          <span class="icon">🏢</span> Tiers
+        </a>
+        <a [class.active]="isActive('/contacts')" (click)="navigate('/contacts')">
+          <span class="icon">👤</span> Contacts
+        </a>
+      </div>
+    </div>
+
+    <!-- Commandes -->
+    <div class="nav-group">
+      <a class="nav-item"
+         [class.active]="isActive('/commandes') || isActive('/livraison') || isActive('/retours')"
+         (click)="toggleCommandes()">
+        <span class="icon">📦</span>
+        Commandes
+        <span class="arrow" [class.open]="commandesOpen">▶</span>
+      </a>
+      <div class="submenu" [class.open]="commandesOpen">
+        <a [class.active]="isActive('/commandes')" (click)="navigate('/commandes')">
+          <span class="icon">📦</span> Commandes
+        </a>
+        <a [class.active]="isActive('/livraison')" (click)="navigate('/livraison')">
+          <span class="icon">🚚</span> Livraison
+        </a>
+        <a [class.active]="isActive('/retours')" (click)="navigate('/retours')">
+          <span class="icon">↩️</span> Retours
+        </a>
+      </div>
+    </div>
+
+    <!-- E-Commerce -->
+    <div class="nav-group">
+      <a class="nav-item"
+         [class.active]="isActive('/ecommerce')"
+         (click)="navigate('/ecommerce')">
+        <span class="icon">🛒</span>
+        E-Commerce
+      </a>
+    </div>
+
+  </nav>
+
+  <div style="padding:16px 20px;border-top:1px solid var(--border);margin-top:auto">
+    <button class="btn btn-danger" style="width:100%;justify-content:center" (click)="logout()">
+      🚪 Déconnexion
+    </button>
+  </div>
+</aside>

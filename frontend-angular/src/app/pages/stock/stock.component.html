@@ -1,0 +1,35 @@
+<div class="page-header">
+  <h1>🗃️ Gestion du Stock</h1>
+  <p>Valeur totale du stock : <strong style="color:var(--success)">{{totalValeur | number}} DH</strong></p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card danger"><div class="stat-label">Ruptures</div><div class="stat-value">{{countRupture()}}</div></div>
+  <div class="stat-card warning"><div class="stat-label">Stock critique (&lt;5)</div><div class="stat-value">{{countCritique()}}</div></div>
+  <div class="stat-card accent"><div class="stat-label">Total produits</div><div class="stat-value">{{produits.length}}</div></div>
+  <div class="stat-card success"><div class="stat-label">Valeur stock (DH)</div><div class="stat-value">{{totalValeur | number}}</div></div>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead><tr><th>Réf</th><th>Produit</th><th>Catégorie</th><th>Prix Achat</th><th>Stock actuel</th><th>Valeur</th><th>Statut</th><th>Ajuster</th></tr></thead>
+    <tbody>
+      <tr *ngFor="let p of produits">
+        <td><code style="color:var(--accent)">{{p.reference}}</code></td>
+        <td><strong>{{p.designation}}</strong></td>
+        <td>{{p.categorie}}</td>
+        <td style="color:var(--danger)">{{p.prixAchat}} DH</td>
+        <td style="text-align:center;font-weight:700;font-size:1.1rem">{{p.stock || 0}}</td>
+        <td style="color:var(--success)">{{(p.stock||0) * p.prixAchat | number}} DH</td>
+        <td><span class="badge" [class]="getStockStatus(p.stock||0).class">{{getStockStatus(p.stock||0).label}}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-secondary btn-sm" (click)="p.stock=(p.stock||0)-1;updateStock(p)">−</button>
+            <input type="number" [(ngModel)]="p.stock" (change)="updateStock(p)" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center;color:var(--text)">
+            <button class="btn btn-secondary btn-sm" (click)="p.stock=(p.stock||0)+1;updateStock(p)">+</button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

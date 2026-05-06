@@ -1,0 +1,15 @@
+# ── BACKEND SYMFONY ──────────────────────────────────
+backend-symfony/.env
+backend-symfony/.env.local
+backend-symfony/.env.dev
+backend-symfony/.env.test
+backend-symfony/vendor/
+backend-symfony/var/
+backend-symfony/.php-cs-fixer.cache
+backend-symfony/public/bundles/
+
+# ── FRONTEND ANGULAR ─────────────────────────────────
+frontend-angular/node_modules/
+frontend-angular/dist/
+frontend-angular/.angular/
+

@@ -1,0 +1,42 @@
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <h1>🏠 Tableau de bord principal</h1>
+    <p>Bienvenue dans votre CRM E-Commerce</p>
+  </div>
+  <button class="btn btn-danger" (click)="logout()">🚪 Déconnexion</button>
+</div>
+
+<div *ngIf="loading" class="empty-state">
+  <div class="icon">⏳</div>
+  <h3>Chargement...</h3>
+</div>
+
+<div *ngIf="!loading">
+  <div class="stats-grid" style="margin-bottom:32px">
+    <div class="stat-card accent">
+      <div class="stat-label">Total Commandes</div>
+      <div class="stat-value">{{stats.total || 0}}</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">CA Livré (DH)</div>
+      <div class="stat-value">{{stats.ca || 0 | number}}</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">Taux Confirmation</div>
+      <div class="stat-value">{{stats.tauxConfirmation || 0}}%</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-label">Taux Retour</div>
+      <div class="stat-value">{{stats.tauxRetour || 0}}%</div>
+    </div>
+  </div>
+
+  <div class="accueil-grid">
+    <div class="accueil-card" *ngFor="let btn of buttons" (click)="navigate(btn.path)">
+      <div class="accueil-icon" [style.color]="btn.color">{{btn.icon}}</div>
+      <div class="accueil-label">{{btn.label}}</div>
+      <div class="accueil-desc">{{btn.desc}}</div>
+      <div class="accueil-arrow">→</div>
+    </div>
+  </div>
+</div>

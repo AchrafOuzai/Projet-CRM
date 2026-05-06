@@ -1,0 +1,72 @@
+<div class="page-header">
+  <h1>✅ Suivi Commandes Confirmées</h1>
+  <p>Toutes les commandes confirmées et leur statut de livraison</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card accent"><div class="stat-label">Confirmées</div><div class="stat-value">{{stats.total}}</div></div>
+  <div class="stat-card success"><div class="stat-label">Livrées</div><div class="stat-value">{{stats.livrees}}</div></div>
+  <div class="stat-card warning"><div class="stat-label">Expédiées</div><div class="stat-value">{{stats.expediees}}</div></div>
+  <div class="stat-card success"><div class="stat-label">Payées</div><div class="stat-value">{{stats.payees}}</div></div>
+  <div class="stat-card danger"><div class="stat-label">Retours</div><div class="stat-value">{{stats.retours}}</div></div>
+  <div class="stat-card accent"><div class="stat-label">Taux Livraison</div><div class="stat-value">{{stats.tauxLivraison}}%</div></div>
+</div>
+
+<div class="card" style="margin-bottom:24px">
+  <h3 style="font-family:'Syne',sans-serif;margin-bottom:16px;font-size:1rem">📅 Par date</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th><th>Confirmées</th><th>Livrées</th><th>Expédiées</th><th>Payées</th><th>Retours</th><th>WhatsApp</th><th>Taux Livraison</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of getByDate()">
+          <td>{{row.date}}</td>
+          <td><strong>{{row.commandes}}</strong></td>
+          <td><span class="badge livree">{{row.livrees}}</span></td>
+          <td><span class="badge expediee">{{row.expediees}}</span></td>
+          <td><span class="badge payee">{{row.payees}}</span></td>
+          <td><span class="badge retour">{{row.retours}}</span></td>
+          <td>{{row.whatsap}}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="progress-bar" style="flex:1">
+                <div class="progress-fill success" [style.width.%]="row.commandes ? row.livrees/row.commandes*100 : 0"></div>
+              </div>
+              <span style="font-size:0.8rem;color:var(--success);font-weight:600">
+                {{row.commandes ? (row.livrees/row.commandes*100 | number:'1.0-0') : 0}}%
+              </span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="font-family:'Syne',sans-serif;margin-bottom:16px;font-size:1rem">📋 Détail commandes confirmées</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Client</th><th>Tél</th><th>Désignation</th><th>Ville</th><th>Qté</th><th>Prix</th><th>Agent</th><th>Livraison</th><th>WhatsApp</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of confirmees">
+          <td>{{c.date}}</td>
+          <td><strong>{{c.client}}</strong></td>
+          <td>{{c.telephone}}</td>
+          <td>{{c.designation}}</td>
+          <td>{{c.ville}}</td>
+          <td>{{c.quantite}}</td>
+          <td style="color:var(--success);font-weight:600">{{c.prixVenteTotal | number}} DH</td>
+          <td>{{c.agent}}</td>
+          <td><span class="badge" [class]="getBadgeClass(c.livraison)">{{c.livraison || '—'}}</span></td>
+          <td>{{c.whatsap}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

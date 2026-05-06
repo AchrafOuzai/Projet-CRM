@@ -1,0 +1,60 @@
+.error       { color: #ef4444; font-size: 0.7rem; margin-top: 3px; display: block; }
+.input-error { border-color: #ef4444 !important; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.select-paginated {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+
+  .select-search {
+    padding: 6px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: var(--text);
+      font-size: 0.82rem;
+      outline: none;
+      &:focus { border-color: var(--accent); }
+      &::placeholder { color: var(--text2); }
+    }
+  }
+
+  select {
+    width: 100%;
+    background: var(--bg3);
+    border: none;
+    border-radius: 0;
+    color: var(--text);
+    font-size: 0.85rem;
+    outline: none;
+    padding: 4px;
+    option {
+      padding: 6px;
+      background: var(--bg3);
+      &:checked { background: var(--accent); }
+    }
+  }
+
+  .select-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+  }
+}

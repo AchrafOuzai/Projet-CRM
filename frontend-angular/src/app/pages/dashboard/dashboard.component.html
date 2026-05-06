@@ -1,0 +1,251 @@
+<div class="page-header">
+  <h1>📊 Dashboard</h1>
+  <p>Indicateurs de performance et analyses</p>
+</div>
+
+<div *ngIf="loading" class="empty-state">
+  <div class="icon">⏳</div>
+  <h3>Chargement du dashboard...</h3>
+</div>
+
+<div *ngIf="!loading">
+
+  <!-- FILTRES -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="form-row cols-4">
+      <div class="form-group">
+        <label>Date début</label>
+        <input type="date" [(ngModel)]="filterDateDebut" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="form-group">
+        <label>Date fin</label>
+        <input type="date" [(ngModel)]="filterDateFin" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="form-group">
+        <label>Agent</label>
+        <select [(ngModel)]="filterAgent" (ngModelChange)="applyFilters()">
+          <option value="">Tous</option>
+          <option *ngFor="let a of config.agents" [value]="a">{{a}}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Livraison</label>
+        <select [(ngModel)]="filterLivr" (ngModelChange)="applyFilters()">
+          <option value="">Tous</option>
+          <option *ngFor="let s of config.statutsLivraison" [value]="s">{{s}}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs PRINCIPAUX -->
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card accent">
+      <div class="stat-label">Total commandes</div>
+      <div class="stat-value">{{stats.total || 0}}</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">CA livré (DH)</div>
+      <div class="stat-value">{{(stats.ca || 0) | number:'1.0-0'}}</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">Dépenses (DH)</div>
+      <div class="stat-value">{{(stats.totalDepenses || 0) | number:'1.0-0'}}</div>
+    </div>
+    <div class="stat-card" [class.success]="(stats.benefice||0)>0" [class.danger]="(stats.benefice||0)<0">
+      <div class="stat-label">Bénéfice (DH)</div>
+      <div class="stat-value">{{(stats.benefice || 0) | number:'1.0-0'}}</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-label">Taux confirmation</div>
+      <div class="stat-value">{{stats.tauxConfirmation || 0}}%</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">Taux livraison</div>
+      <div class="stat-value">{{stats.tauxLivraison || 0}}%</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-label">Taux retour</div>
+      <div class="stat-value">{{stats.tauxRetour || 0}}%</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">Stock total</div>
+      <div class="stat-value">{{stats.stockTotal || 0}}</div>
+    </div>
+  </div>
+
+  <!-- STATUTS COMMANDES -->
+  <div class="section-title">📦 Statuts des commandes</div>
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card accent">  <div class="stat-label">Total</div>     <div class="stat-value">{{stats.total || 0}}</div></div>
+    <div class="stat-card success"> <div class="stat-label">Livrées</div>   <div class="stat-value">{{stats.livrees || 0}}</div></div>
+    <div class="stat-card warning"> <div class="stat-label">Expédiées</div> <div class="stat-value">{{stats.expediees || 0}}</div></div>
+    <div class="stat-card success"> <div class="stat-label">Payées</div>    <div class="stat-value">{{stats.payees || 0}}</div></div>
+    <div class="stat-card danger">  <div class="stat-label">Retours</div>   <div class="stat-value">{{stats.retours || 0}}</div></div>
+    <div class="stat-card danger">  <div class="stat-label">Annulées</div>  <div class="stat-value">{{stats.annulees || 0}}</div></div>
+  </div>
+
+  <!-- STATUTS CONFIRMATION -->
+  <div class="section-title">☎️ Statuts de confirmation</div>
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card accent">  <div class="stat-label">Confirmées</div>    <div class="stat-value">{{stats.confirmees || 0}}</div></div>
+    <div class="stat-card danger">  <div class="stat-label">Pas intéressé</div> <div class="stat-value">{{stats.pasInteresse || 0}}</div></div>
+    <div class="stat-card warning"> <div class="stat-label">Pas de réponse</div><div class="stat-value">{{stats.pasReponse || 0}}</div></div>
+    <div class="stat-card warning"> <div class="stat-label">Injoignable</div>   <div class="stat-value">{{stats.injoignable || 0}}</div></div>
+    <div class="stat-card danger">  <div class="stat-label">Faux numéro</div>   <div class="stat-value">{{stats.fauxNumero || 0}}</div></div>
+    <div class="stat-card accent">  <div class="stat-label">2ème appel</div>    <div class="stat-value">{{stats.deuxiemeAppel || 0}}</div></div>
+  </div>
+
+  <!-- KPIs BARRES -->
+  <div class="grid-3" style="margin-bottom:20px">
+    <div class="card">
+      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de confirmation</div>
+      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--accent)">{{stats.tauxConfirmation || 0}}%</div>
+      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill accent" [style.width.%]="stats.tauxConfirmation || 0"></div></div>
+    </div>
+    <div class="card">
+      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de livraison</div>
+      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--success)">{{stats.tauxLivraison || 0}}%</div>
+      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill success" [style.width.%]="stats.tauxLivraison || 0"></div></div>
+    </div>
+    <div class="card">
+      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de retour</div>
+      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--danger)">{{stats.tauxRetour || 0}}%</div>
+      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill danger" [style.width.%]="stats.tauxRetour || 0"></div></div>
+    </div>
+  </div>
+
+  <!-- VENTES PAR MOIS -->
+  <div class="section-title">📅 Ventes par mois</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Mois</th><th>Commandes</th><th>Livrées</th>
+            <th>CA Livré (DH)</th><th>Payées</th><th>CA Payé (DH)</th><th>Total CA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of objectKeys(ventesParMois)">
+            <td><strong>{{moisLabel(m)}}</strong></td>
+            <td>{{ventesParMois[m].commandes || 0}}</td>
+            <td><span class="badge livree">{{ventesParMois[m].livrees || 0}}</span></td>
+            <td style="color:var(--success)">{{(ventesParMois[m].ventes || 0) | number:'1.0-0'}} DH</td>
+            <td><span class="badge payee">{{ventesParMois[m].payees || 0}}</span></td>
+            <td style="color:var(--success)">{{(ventesParMois[m].ventesPay || 0) | number:'1.0-0'}} DH</td>
+            <td style="font-weight:700;color:var(--accent)">
+              {{((ventesParMois[m].ventes || 0) + (ventesParMois[m].ventesPay || 0)) | number:'1.0-0'}} DH
+            </td>
+          </tr>
+          <tr *ngIf="objectKeys(ventesParMois).length === 0">
+            <td colspan="7" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE ÉQUIPE -->
+  <div class="section-title">👥 Performance équipe</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>Agent</th><th>Total</th><th>Confirmées</th><th>Taux conf.</th><th>Livrées</th><th>Taux livr.</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let agent of objectKeys(performanceAgents)">
+            <td><strong>{{agent}}</strong></td>
+            <td>{{performanceAgents[agent].total}}</td>
+            <td><span class="badge confirmee">{{performanceAgents[agent].confirmees}}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="progress-bar" style="flex:1;min-width:60px">
+                  <div class="progress-fill accent" [style.width.%]="performanceAgents[agent].total ? performanceAgents[agent].confirmees/performanceAgents[agent].total*100 : 0"></div>
+                </div>
+                <span style="color:var(--accent);font-size:0.8rem;font-weight:600;min-width:32px">
+                  {{performanceAgents[agent].total ? (performanceAgents[agent].confirmees/performanceAgents[agent].total*100 | number:'1.0-0') : 0}}%
+                </span>
+              </div>
+            </td>
+            <td><span class="badge livree">{{performanceAgents[agent].livrees}}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="progress-bar" style="flex:1;min-width:60px">
+                  <div class="progress-fill success" [style.width.%]="performanceAgents[agent].confirmees ? performanceAgents[agent].livrees/performanceAgents[agent].confirmees*100 : 0"></div>
+                </div>
+                <span style="color:var(--success);font-size:0.8rem;font-weight:600;min-width:32px">
+                  {{performanceAgents[agent].confirmees ? (performanceAgents[agent].livrees/performanceAgents[agent].confirmees*100 | number:'1.0-0') : 0}}%
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="objectKeys(performanceAgents).length === 0">
+            <td colspan="6" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VENTES PAR PRODUIT -->
+  <div class="section-title">📦 Ventes par produit</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>Produit</th><th>Commandes</th><th>Qté</th><th>Livrées</th><th>Taux livr.</th><th>CA (DH)</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of objectKeys(ventesParProduit)">
+            <td><strong>{{p}}</strong></td>
+            <td>{{ventesParProduit[p].commandes}}</td>
+            <td>{{ventesParProduit[p].qte}}</td>
+            <td><span class="badge livree">{{ventesParProduit[p].livrees}}</span></td>
+            <td [style.color]="ventesParProduit[p].commandes && (ventesParProduit[p].livrees/ventesParProduit[p].commandes) > 0.5 ? 'var(--success)' : 'var(--warning)'">
+              {{ventesParProduit[p].commandes ? (ventesParProduit[p].livrees/ventesParProduit[p].commandes*100 | number:'1.0-0') : 0}}%
+            </td>
+            <td style="color:var(--success);font-weight:700">{{ventesParProduit[p].ventes | number:'1.0-0'}} DH</td>
+            <td><span class="badge" [class]="ventesParProduit[p].commandes > 10 ? 'livree' : 'expediee'">
+              {{ventesParProduit[p].commandes > 10 ? 'Top' : 'Normal'}}
+            </span></td>
+          </tr>
+          <tr *ngIf="objectKeys(ventesParProduit).length === 0">
+            <td colspan="7" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMMANDES PAR VILLE -->
+  <div class="section-title">🏙️ Commandes par ville</div>
+  <div class="card">
+    <div class="table-container">
+      <table>
+        <thead><tr><th>Ville</th><th>Commandes</th><th>Part</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let v of objectKeys(commandesParVille)">
+            <td><strong>{{v}}</strong></td>
+            <td>{{commandesParVille[v]}}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="progress-bar" style="flex:1;min-width:80px">
+                  <div class="progress-fill accent" [style.width.%]="stats.total ? commandesParVille[v]/stats.total*100 : 0"></div>
+                </div>
+                <span style="font-size:0.8rem;color:var(--accent);min-width:32px">
+                  {{stats.total ? (commandesParVille[v]/stats.total*100 | number:'1.0-0') : 0}}%
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="objectKeys(commandesParVille).length === 0">
+            <td colspan="3" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

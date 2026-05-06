@@ -1,0 +1,105 @@
+<div class="page-header">
+  <h1>💸 Dépenses</h1>
+  <p>Total : <strong style="color:var(--danger)">{{totalDepenses | number}} DH</strong></p>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-primary" (click)="openAdd()">+ Nouvelle dépense</button>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-size:1rem;margin-bottom:16px">Par catégorie</h3>
+    <div *ngFor="let item of byCategorie()" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>{{item.categorie}}</span>
+        <span style="color:var(--danger);font-weight:600">{{item.montant | number}} DH</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill danger"
+             [style.width.%]="totalDepenses ? item.montant / totalDepenses * 100 : 0">
+        </div>
+      </div>
+    </div>
+    <div *ngIf="byCategorie().length === 0" style="color:var(--text2);text-align:center;padding:20px">
+      Aucune dépense
+    </div>
+  </div>
+  <div class="stat-card danger" style="display:flex;flex-direction:column;justify-content:center">
+    <div class="stat-label">Total Dépenses</div>
+    <div class="stat-value" style="font-size:2.5rem">{{totalDepenses | number}}</div>
+    <div class="stat-sub">DH</div>
+  </div>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th><th>Désignation</th><th>Catégorie</th>
+        <th>Montant (DH)</th><th>Commentaire</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let d of depenses">
+        <td>{{d.date}}</td>
+        <td><strong>{{d.designation}}</strong></td>
+        <td><span class="badge pas-reponse">{{d.categorie}}</span></td>
+        <td style="color:var(--danger);font-weight:700">{{d.montant | number}} DH</td>
+        <td style="color:var(--text2)">{{d.commentaire}}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" (click)="openEdit(d)">✏️</button>
+            <button class="btn btn-danger btn-sm" (click)="delete(d.id!)">🗑️</button>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="depenses.length === 0">
+        <td colspan="6">
+          <div class="empty-state">
+            <div class="icon">💰</div>
+            <h3>Aucune dépense enregistrée</h3>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouvelle'}} dépense</h3>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" [(ngModel)]="form.date">
+      </div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select [(ngModel)]="form.categorie">
+          <option value="">— Sélectionner —</option>
+          <option *ngFor="let c of categories" [value]="c">{{c}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Désignation</label>
+        <input type="text" [(ngModel)]="form.designation">
+      </div>
+      <div class="form-group">
+        <label>Montant (DH)</label>
+        <input type="number" [(ngModel)]="form.montant">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Commentaire</label>
+      <textarea [(ngModel)]="form.commentaire"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>

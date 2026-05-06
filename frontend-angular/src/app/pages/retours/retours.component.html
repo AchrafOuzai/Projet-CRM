@@ -1,0 +1,249 @@
+<div class="page-header">
+  <h1>↩️ Retours des commandes</h1>
+  <p>{{filtered.length}} retour(s) affiché(s) sur {{retours.length}}</p>
+</div>
+
+<!-- SYNC PAR PLATEFORME -->
+<div class="card" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:0.8rem;font-weight:600;color:var(--text2);
+                 text-transform:uppercase;letter-spacing:1px">
+      Synchroniser les retours :
+    </span>
+
+    <button class="btn btn-secondary btn-sm"
+            (click)="syncRetours('prestashop')"
+            [disabled]="syncing['prestashop']">
+      {{syncing['prestashop'] ? '⏳...' : '🛒 PrestaShop'}}
+    </button>
+
+    <button class="btn btn-secondary btn-sm"
+            (click)="syncRetours('woocommerce')"
+            [disabled]="syncing['woocommerce']">
+      {{syncing['woocommerce'] ? '⏳...' : '🟣 WooCommerce'}}
+    </button>
+
+    <button class="btn btn-secondary btn-sm"
+            (click)="syncRetours('shopify')"
+            [disabled]="syncing['shopify']">
+      {{syncing['shopify'] ? '⏳...' : '🟢 Shopify'}}
+    </button>
+
+    <button class="btn btn-primary btn-sm" (click)="openAdd()">
+      + Retour manuel
+    </button>
+  </div>
+
+  <!-- Résultats sync -->
+  <div *ngFor="let type of ['prestashop','woocommerce','shopify']">
+    <div *ngIf="syncResults[type]"
+         style="margin-top:8px;padding:8px 12px;border-radius:6px;font-size:0.82rem"
+         [style.background]="syncResults[type].success ? '#dcfce7' : '#fee2e2'"
+         [style.color]="syncResults[type].success ? '#15803d' : '#b91c1c'">
+      {{getSourceIcon(type)}} {{syncResults[type].message}}
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid" style="margin-bottom:16px">
+  <div class="stat-card danger">
+    <div class="stat-label">Total retours</div>
+    <div class="stat-value">{{retours.length}}</div>
+  </div>
+  <div class="stat-card danger">
+    <div class="stat-label">Montant remboursé</div>
+    <div class="stat-value">{{getTotalRembourse() | number:'1.0-0'}} DH</div>
+  </div>
+  <div class="stat-card info">
+    <div class="stat-label">PrestaShop</div>
+    <div class="stat-value">{{countBySource('prestashop')}}</div>
+  </div>
+  <div class="stat-card expediee">
+    <div class="stat-label">WooCommerce</div>
+    <div class="stat-value">{{countBySource('woocommerce')}}</div>
+  </div>
+  <div class="stat-card accent">
+    <div class="stat-label">Shopify</div>
+    <div class="stat-value">{{countBySource('shopify')}}</div>
+  </div>
+  <div class="stat-card pas-reponse">
+    <div class="stat-label">Manuel</div>
+    <div class="stat-value">{{countBySource('manuel')}}</div>
+  </div>
+</div>
+
+<div *ngIf="loading" class="empty-state">
+  <div class="icon">⏳</div>
+  <h3>Chargement...</h3>
+</div>
+
+<div *ngIf="!loading">
+  <div class="toolbar">
+    <div class="search-bar" style="flex:1;min-width:200px;margin:0">
+      <span>🔍</span>
+      <input [(ngModel)]="search" (ngModelChange)="applyFilters()"
+             placeholder="Client, ref, email, motif...">
+    </div>
+    <select [(ngModel)]="filterSource" (ngModelChange)="applyFilters()" class="filter-select">
+      <option value="">Source (toutes)</option>
+      <option value="prestashop">🛒 PrestaShop</option>
+      <option value="woocommerce">🟣 WooCommerce</option>
+      <option value="shopify">🟢 Shopify</option>
+      <option value="manuel">✏️ Manuel</option>
+    </select>
+    <select [(ngModel)]="filterStatut" (ngModelChange)="applyFilters()" class="filter-select">
+      <option value="">Statut (tous)</option>
+      <option *ngFor="let s of statuts" [value]="s">{{s}}</option>
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Ref retour</th>
+          <th>Ref commande</th>
+          <th>Source</th>
+          <th>Tiers</th>
+          <th>Client</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Ville</th>
+          <th>Pays</th>
+          <th>Montant remboursé</th>
+          <th>Motif</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of filtered">
+          <td>{{r.date || '—'}}</td>
+          <td><code style="color:var(--accent);font-size:0.78rem">{{r.ref || '—'}}</code></td>
+          <td><code style="color:var(--text2);font-size:0.78rem">{{r.refCommande || '—'}}</code></td>
+          <td>
+            <span class="badge" [class]="getSourceBadge(r.source)">
+              {{getSourceIcon(r.source)}} {{r.source}}
+            </span>
+          </td>
+          <td>
+            <span *ngIf="r.tiersNom" style="color:var(--accent);font-weight:600">{{r.tiersNom}}</span>
+            <span *ngIf="!r.tiersNom" style="color:var(--text2)">—</span>
+          </td>
+          <td><strong>{{r.client || '—'}}</strong></td>
+          <td style="color:var(--text2);font-size:0.82rem">{{r.emailClient || '—'}}</td>
+          <td>{{r.telephone || '—'}}</td>
+          <td>{{r.ville || '—'}}</td>
+          <td>{{r.pays || '—'}}</td>
+          <td style="color:var(--danger);font-weight:600">
+            {{(r.montantRembourse || 0) | number:'1.0-0'}} DH
+          </td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;
+                     white-space:nowrap" [title]="r.motif || ''">
+            {{r.motif || '—'}}
+          </td>
+          <td>
+            <span class="badge" [class]="getStatutBadge(r.statut)">
+              {{r.statut || '—'}}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-secondary btn-sm" (click)="openEdit(r)">✏️</button>
+              <button class="btn btn-danger btn-sm" (click)="delete(r.id)">🗑️</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="14">
+            <div class="empty-state">
+              <div class="icon">↩️</div>
+              <h3>Aucun retour trouvé</h3>
+              <p style="color:var(--text2);font-size:0.85rem;margin-top:8px">
+                Cliquez sur un bouton de sync pour importer les retours depuis vos plateformes
+              </p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL RETOUR MANUEL -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouveau'}} retour</h3>
+
+    <div class="form-row cols-3">
+      <div class="form-group">
+        <label>Source</label>
+        <select [(ngModel)]="form.source">
+          <option *ngFor="let s of sources" [value]="s">{{s}}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" [(ngModel)]="form.date">
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select [(ngModel)]="form.statut">
+          <option *ngFor="let s of statuts" [value]="s">{{s}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Ref retour</label>
+        <input type="text" [(ngModel)]="form.ref" placeholder="RETOUR-001">
+      </div>
+      <div class="form-group">
+        <label>Ref commande liée</label>
+        <input type="text" [(ngModel)]="form.refCommande" placeholder="WC-17, PS-5...">
+      </div>
+    </div>
+
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Client *</label>
+        <input type="text" [(ngModel)]="form.client"
+               [class.input-error]="errors['client']" placeholder="Nom du client">
+        <span class="error" *ngIf="errors['client']">{{errors['client']}}</span>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="form.emailClient" placeholder="client@email.com">
+      </div>
+    </div>
+
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="text" [(ngModel)]="form.telephone">
+      </div>
+      <div class="form-group">
+        <label>Montant remboursé (DH)</label>
+        <input type="number" [(ngModel)]="form.montantRembourse" min="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Motif du retour</label>
+      <input type="text" [(ngModel)]="form.motif" placeholder="Produit défectueux, erreur commande...">
+    </div>
+
+    <div class="form-group">
+      <label>Commentaire</label>
+      <textarea [(ngModel)]="form.commentaire" placeholder="Notes additionnelles..."></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
