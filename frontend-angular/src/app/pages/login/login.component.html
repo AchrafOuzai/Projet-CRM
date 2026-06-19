@@ -1,23 +1,95 @@
-<div class="login-page">
-  <div class="login-card">
-    <div class="login-logo">⚡ ShopCRM</div>
-    <p class="login-sub">Connectez-vous à votre espace</p>
+<div style="margin:0;padding:0;min-height:100vh" class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm">
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
 
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" [(ngModel)]="email" placeholder="admin@crm.com">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <ng-icon name="heroSquares2x2" class="text-white" size="28"></ng-icon>
+        </div>
+        <h1 class="font-display font-black text-2xl text-slate-900 tracking-tight">ShopCRM</h1>
+        <p class="text-slate-500 text-sm mt-1">Connectez-vous à votre espace</p>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Email</label>
+        <div class="relative">
+          <ng-icon name="heroEnvelope" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></ng-icon>
+          <input type="email" [(ngModel)]="email"
+                 (keyup.enter)="login()"
+                 placeholder="votre@email.com"
+                 class="w-full border-[1.5px] border-slate-200 rounded-lg pl-9 pr-3 py-2.5 text-slate-900 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400">
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Mot de passe</label>
+        <div class="relative">
+          <ng-icon name="heroLockClosed" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size="16"></ng-icon>
+          <input type="password" [(ngModel)]="password"
+                 (keyup.enter)="login()"
+                 placeholder="••••••••"
+                 class="w-full border-[1.5px] border-slate-200 rounded-lg pl-9 pr-3 py-2.5 text-slate-900 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400">
+        </div>
+      </div>
+
+      <!-- Bouton connexion -->
+      <button (click)="login()" [disabled]="loading"
+              class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm py-2.5 px-4 rounded-lg shadow-md transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2">
+        <ng-icon *ngIf="loading" name="heroArrowPath" size="16" class="animate-spin"></ng-icon>
+        <ng-icon *ngIf="!loading" name="heroShieldCheck" size="16"></ng-icon>
+        <span>{{loading ? 'Connexion...' : 'Se connecter'}}</span>
+      </button>
+
+      <!-- Séparateur -->
+      <div class="flex items-center gap-3 my-5">
+        <div class="flex-1 h-px bg-slate-200"></div>
+        <span class="text-xs text-slate-400 font-medium">ou</span>
+        <div class="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      <!-- Créer un compte -->
+      <button (click)="goToRegister()"
+              class="w-full border-[1.5px] border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-semibold text-sm py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+        <ng-icon name="heroPlusCircle" size="16"></ng-icon>
+        Créer un compte
+      </button>
+
+      <!-- Note -->
+      <p class="text-center text-xs text-slate-400 mt-4">
+        Les agents reçoivent leurs accès de leur administrateur
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL ERREUR -->
+<div *ngIf="showErrorModal"
+     class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+     (click)="closeErrorModal()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+       (click)="$event.stopPropagation()">
+
+    <!-- Icône + titre -->
+    <div class="flex flex-col items-center text-center mb-5">
+      <div [class]="'w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ' +
+        (errorTitle === 'Compte suspendu' ? 'bg-orange-50' : 'bg-red-50')">
+        <ng-icon
+          [name]="errorTitle === 'Compte suspendu' ? 'heroExclamationTriangle' : 'heroXCircle'"
+          size="28"
+          [class]="errorTitle === 'Compte suspendu' ? 'text-orange-500' : 'text-red-500'">
+        </ng-icon>
+      </div>
+      <h3 class="font-display font-black text-lg text-slate-900">{{errorTitle}}</h3>
+      <p class="text-slate-500 text-sm mt-2 leading-relaxed">{{errorMessage}}</p>
     </div>
 
-    <div class="form-group">
-      <label>Mot de passe</label>
-      <input type="password" [(ngModel)]="password" placeholder="••••••••">
-    </div>
-
-    <div class="login-error" *ngIf="error">{{error}}</div>
-
-    <button class="btn btn-primary" style="width:100%;justify-content:center"
-            (click)="login()" [disabled]="loading">
-      {{loading ? 'Connexion...' : '🔐 Se connecter'}}
+    <!-- Bouton fermer -->
+    <button (click)="closeErrorModal()"
+            class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-2.5 px-4 rounded-xl transition-all">
+      Réessayer
     </button>
   </div>
 </div>

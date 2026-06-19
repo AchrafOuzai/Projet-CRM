@@ -1,11 +1,12 @@
-.section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin: 28px 0 14px;
-  padding-left: 12px;
-  border-left: 3px solid var(--accent);
+/* Sidebar — plus besoin de CSS custom, tout est en Tailwind */
+/* Seule exception : l'animation submenu max-height */
+
+:host { display: block; }
+
+.submenu {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.24s ease;
+
+  &.open { max-height: 200px; }
 }

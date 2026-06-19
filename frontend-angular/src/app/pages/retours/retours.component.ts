@@ -2,11 +2,12 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-retours',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgIconComponent],
   templateUrl: './retours.component.html',
   styleUrls: ['./retours.component.scss']
 })
@@ -26,8 +27,8 @@ export class RetoursComponent implements OnInit {
   form: any = {};
   errors: any = {};
 
-  statuts  = ['En attente', 'Remboursé', 'Refusé'];
-  sources  = ['manuel', 'prestashop', 'woocommerce', 'shopify'];
+  statuts = ['En attente', 'Remboursé', 'Refusé'];
+  sources = ['manuel', 'prestashop', 'woocommerce', 'shopify'];
 
   constructor(private ds: DataService, private cdr: ChangeDetectorRef) {}
 
@@ -54,7 +55,6 @@ export class RetoursComponent implements OnInit {
         || (r.ref         || '').toLowerCase().includes(s)
         || (r.refCommande || '').toLowerCase().includes(s)
         || (r.emailClient || '').toLowerCase().includes(s)
-        || (r.tiersNom    || '').toLowerCase().includes(s)
         || (r.motif       || '').toLowerCase().includes(s);
       const matchSource = !this.filterSource || r.source === this.filterSource;
       const matchStatut = !this.filterStatut || r.statut === this.filterStatut;
@@ -63,7 +63,7 @@ export class RetoursComponent implements OnInit {
   }
 
   syncRetours(type: string) {
-    this.syncing[type]    = true;
+    this.syncing[type]     = true;
     this.syncResults[type] = null;
     this.ds.syncEcommerceRetours(type).subscribe({
       next: (res) => {
@@ -77,10 +77,9 @@ export class RetoursComponent implements OnInit {
   }
 
   openAdd() {
-    this.form     = { source: 'manuel', statut: 'En attente',
-                      date: new Date().toISOString().split('T')[0] };
-    this.errors   = {};
-    this.editMode = false;
+    this.form      = { source: 'manuel', statut: 'En attente', date: new Date().toISOString().split('T')[0] };
+    this.errors    = {};
+    this.editMode  = false;
     this.showModal = true;
   }
 
@@ -97,11 +96,9 @@ export class RetoursComponent implements OnInit {
     this.errors = {};
     if (!this.form.client?.trim()) this.errors['client'] = 'Client obligatoire';
     if (Object.keys(this.errors).length > 0) return;
-
     const obs = this.editMode
       ? this.ds.updateRetourObs(this.form)
       : this.ds.addRetourObs(this.form);
-
     obs.subscribe({
       next: () => { this.load(); this.closeModal(); },
       error: (err) => console.error(err)
@@ -117,24 +114,50 @@ export class RetoursComponent implements OnInit {
     }
   }
 
-  getTotalRembourse(): number {
-    return this.retours.reduce((s, r) => s + (r.montantRembourse || 0), 0);
+  // ── EXPORT CSV ──────────────────────────────────────
+  exportCSV() {
+    const headers = [
+      'Date', 'Ref Retour', 'Ref Commande', 'Source',
+      'Client', 'Email', 'Téléphone', 'Ville',
+      'Montant Remboursé (DH)', 'Motif', 'Statut'
+    ];
+    const rows = this.filtered.map(r => [
+      r.date              || '',
+      r.ref               || '',
+      r.refCommande       || '',
+      r.source            || '',
+      r.client            || '',
+      r.emailClient       || '',
+      r.telephone         || '',
+      r.ville             || '',
+      r.montantRembourse  || 0,
+      r.motif             || '',
+      r.statut            || ''
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `retours_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
+  // ────────────────────────────────────────────────────
 
-  countBySource(source: string): number {
-    return this.retours.filter(r => r.source === source).length;
-  }
+  getTotalRembourse(): number { return this.retours.reduce((s, r) => s + (r.montantRembourse || 0), 0); }
+  countBySource(source: string): number { return this.retours.filter(r => r.source === source).length; }
 
   getSourceBadge(source: string): string {
     const map: any = { prestashop: 'info', woocommerce: 'expediee', shopify: 'confirmee', manuel: 'pas-reponse' };
     return map[source] || 'pas-reponse';
   }
-
   getSourceIcon(source: string): string {
     const map: any = { prestashop: '🛒', woocommerce: '🟣', shopify: '🟢', manuel: '✏️' };
     return map[source] || '✏️';
   }
-
   getStatutBadge(statut: string): string {
     const map: any = { 'Remboursé': 'livree', 'En attente': 'retour', 'Refusé': 'annulee' };
     return map[statut] || 'pas-reponse';

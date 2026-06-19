@@ -1,0 +1,267 @@
+<!-- Page Super Admin — thème clair + bleu -->
+<div class="min-h-screen bg-slate-50">
+
+  <!-- Navbar -->
+  <nav class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-200">
+        <ng-icon name="heroSquares2x2" class="text-white" size="18"></ng-icon>
+      </div>
+      <div>
+        <h1 class="text-slate-900 font-bold text-sm">ShopCRM</h1>
+        <span class="text-blue-500 text-xs uppercase tracking-widest font-medium">Super Admin — is-MOENN</span>
+      </div>
+    </div>
+    <button (click)="logout()"
+            class="flex items-center gap-2 text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm transition-all">
+      <ng-icon name="heroArrowRightOnRectangle" size="16"></ng-icon>
+      Déconnexion
+    </button>
+  </nav>
+
+  <div class="p-6 max-w-7xl mx-auto">
+
+    <!-- Titre + bouton -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-slate-900 text-2xl font-bold tracking-tight">Gestion des Tenants</h2>
+        <p class="text-slate-400 text-sm mt-1">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+            {{tenants.length}} compte(s) client(s)
+          </span>
+        </p>
+      </div>
+      <button (click)="openAdd()"
+              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md shadow-blue-200 hover:-translate-y-0.5">
+        <ng-icon name="heroPlusCircle" size="18"></ng-icon>
+        Créer un compte
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-20">
+      <ng-icon name="heroArrowPath" size="32" class="animate-spin mx-auto mb-3 text-blue-400"></ng-icon>
+      <p class="text-slate-500 font-medium">Chargement...</p>
+    </div>
+
+    <!-- Tableau -->
+    <div *ngIf="!loading" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+            <th class="px-5 py-3.5 text-left font-semibold">Entreprise</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Email</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Plan</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Statut</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Utilisateurs</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Créé le</th>
+            <th class="px-5 py-3.5 text-left font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tenants" class="border-t border-slate-100 hover:bg-blue-50/40 transition-colors">
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm">
+                  {{t.nom.charAt(0).toUpperCase()}}
+                </div>
+                <div>
+                  <span class="text-slate-800 font-semibold block">{{t.nom}}</span>
+                  <span *ngIf="t.statut === 'suspendu'" class="text-red-500 text-[0.65rem] font-bold uppercase">⛔ Suspendu</span>
+                </div>
+              </div>
+            </td>
+            <td class="px-5 py-3.5 text-slate-500">{{t.email}}</td>
+            <td class="px-5 py-3.5">
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="getPlanClass(t.plan)">
+                {{t.plan | uppercase}}
+              </span>
+            </td>
+            <td class="px-5 py-3.5">
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [class]="getStatutClass(t.statut)">
+                {{t.statut | titlecase}}
+              </span>
+            </td>
+            <td class="px-5 py-3.5">
+              <span class="inline-flex items-center gap-1 text-slate-600 font-medium">
+                <ng-icon name="heroUsers" size="13" class="text-slate-400"></ng-icon>
+                {{t.nbUsers}}
+              </span>
+            </td>
+            <td class="px-5 py-3.5 text-slate-400 text-xs">{{t.createdAt | date:'dd/MM/yyyy'}}</td>
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-1.5">
+                <!-- Modifier -->
+                <button (click)="openEdit(t)" title="Modifier"
+                        class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-md transition-all">
+                  <ng-icon name="heroPencilSquare" size="16"></ng-icon>
+                </button>
+                <!-- Réinitialiser MDP -->
+                <button (click)="openReset(t)" title="Réinitialiser mot de passe"
+                        class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 rounded-md transition-all">
+                  <ng-icon name="heroKey" size="16"></ng-icon>
+                </button>
+                <!-- Suspendre / Activer — ouvre modal -->
+                <button (click)="openToggle(t)"
+                        [title]="t.statut === 'actif' ? 'Suspendre' : 'Activer'"
+                        class="p-1.5 border border-transparent rounded-md transition-all"
+                        [class]="t.statut === 'actif'
+                          ? 'text-slate-400 hover:text-orange-600 hover:bg-orange-50 hover:border-orange-200'
+                          : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200'">
+                  <ng-icon [name]="t.statut === 'actif' ? 'heroPause' : 'heroPlay'" size="16"></ng-icon>
+                </button>
+                <!-- Supprimer — ouvre modal -->
+                <button (click)="openDelete(t)" title="Supprimer"
+                        class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-md transition-all">
+                  <ng-icon name="heroTrash" size="16"></ng-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="tenants.length === 0">
+            <td colspan="7" class="px-5 py-20 text-center">
+              <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <ng-icon name="heroBuildingOffice2" size="32" class="text-blue-300"></ng-icon>
+              </div>
+              <p class="text-slate-500 font-medium mb-1">Aucun tenant pour le moment</p>
+              <button (click)="openAdd()"
+                      class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 text-sm font-semibold bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-all mt-3">
+                <ng-icon name="heroPlusCircle" size="16"></ng-icon>
+                Créer le premier compte
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL Créer / Modifier -->
+<div *ngIf="showModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeModal()">
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100">
+      <div class="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+        <ng-icon [name]="editMode ? 'heroPencilSquare' : 'heroPlusCircle'" size="18" class="text-blue-600"></ng-icon>
+      </div>
+      <h3 class="text-slate-900 font-bold text-lg">{{editMode ? 'Modifier le tenant' : 'Créer un compte tenant'}}</h3>
+    </div>
+    <div *ngIf="errors['global']" class="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">{{errors['global']}}</div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nom de l'entreprise *</label>
+        <input type="text" [(ngModel)]="form.nom" placeholder="Ex: Boutique Ahmed"
+               class="w-full bg-white border text-slate-900 text-sm rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-100"
+               [class.border-red-400]="errors['nom']" [class.border-slate-200]="!errors['nom']">
+        <span *ngIf="errors['nom']" class="text-red-500 text-xs mt-1 block">{{errors['nom']}}</span>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email *</label>
+        <input type="email" [(ngModel)]="form.email" placeholder="admin@boutique.com" [disabled]="editMode"
+               class="w-full bg-white border text-slate-900 text-sm rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-100"
+               [class.border-red-400]="errors['email']" [class.border-slate-200]="!errors['email']" [class.opacity-50]="editMode">
+        <span *ngIf="errors['email']" class="text-red-500 text-xs mt-1 block">{{errors['email']}}</span>
+      </div>
+      <div *ngIf="!editMode">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mot de passe *</label>
+        <input type="password" [(ngModel)]="form.password" placeholder="Mot de passe sécurisé"
+               class="w-full bg-white border text-slate-900 text-sm rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-100"
+               [class.border-red-400]="errors['password']" [class.border-slate-200]="!errors['password']">
+        <span *ngIf="errors['password']" class="text-red-500 text-xs mt-1 block">{{errors['password']}}</span>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Plan</label>
+        <select [(ngModel)]="form.plan" class="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 cursor-pointer">
+          <option *ngFor="let p of plans" [value]="p">{{p | uppercase}}</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-100">
+      <button (click)="closeModal()" class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-sm font-medium rounded-lg transition-all">Annuler</button>
+      <button (click)="save()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all shadow-md shadow-blue-200">
+        {{editMode ? 'Enregistrer' : 'Créer le compte'}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL Réinitialiser MDP -->
+<div *ngIf="showResetModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeResetModal()">
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+      <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
+        <ng-icon name="heroKey" size="18" class="text-amber-500"></ng-icon>
+      </div>
+      <div>
+        <h3 class="text-slate-900 font-bold text-base">Réinitialiser le mot de passe</h3>
+        <p class="text-slate-400 text-xs mt-0.5">Tenant : <strong class="text-slate-700">{{selectedTenant?.nom}}</strong></p>
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nouveau mot de passe</label>
+      <input type="password" [(ngModel)]="resetPassword" placeholder="Nouveau mot de passe"
+             class="w-full bg-white border border-slate-200 text-slate-900 text-sm rounded-lg px-3 py-2.5 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all">
+    </div>
+    <div class="flex gap-3 justify-end mt-5 pt-4 border-t border-slate-100">
+      <button (click)="closeResetModal()" class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-sm font-medium rounded-lg transition-all">Annuler</button>
+      <button (click)="saveReset()" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-all shadow-md shadow-amber-100">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL Suspendre / Activer -->
+<div *ngIf="showToggleModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeToggleModal()">
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+      <div [class]="'w-9 h-9 rounded-xl flex items-center justify-center ' + (selectedTenant?.statut === 'actif' ? 'bg-orange-50' : 'bg-emerald-50')">
+        <ng-icon [name]="selectedTenant?.statut === 'actif' ? 'heroPause' : 'heroPlay'" size="18"
+                 [class]="selectedTenant?.statut === 'actif' ? 'text-orange-500' : 'text-emerald-500'"></ng-icon>
+      </div>
+      <div>
+        <h3 class="text-slate-900 font-bold text-base">
+          {{selectedTenant?.statut === 'actif' ? 'Suspendre le tenant' : 'Activer le tenant'}}
+        </h3>
+        <p class="text-slate-400 text-xs mt-0.5"><strong class="text-slate-700">{{selectedTenant?.nom}}</strong></p>
+      </div>
+    </div>
+    <p class="text-slate-600 text-sm mb-5">
+      <ng-container *ngIf="selectedTenant?.statut === 'actif'">
+        Le tenant sera <strong class="text-orange-600">suspendu</strong>. Son compte sera bloqué et il ne pourra plus se connecter à ShopCRM.
+      </ng-container>
+      <ng-container *ngIf="selectedTenant?.statut !== 'actif'">
+        Le tenant sera <strong class="text-emerald-600">réactivé</strong>. Il pourra de nouveau accéder à son espace CRM.
+      </ng-container>
+    </p>
+    <div class="flex gap-3 justify-end pt-4 border-t border-slate-100">
+      <button (click)="closeToggleModal()" class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-sm font-medium rounded-lg transition-all">Annuler</button>
+      <button (click)="confirmToggle()"
+              [class]="'px-5 py-2 text-white text-sm font-semibold rounded-lg transition-all ' + (selectedTenant?.statut === 'actif' ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-500 hover:bg-emerald-600')">
+        {{selectedTenant?.statut === 'actif' ? 'Suspendre' : 'Activer'}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ MODAL Supprimer -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" (click)="closeDeleteModal()">
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+      <div class="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+        <ng-icon name="heroTrash" size="18" class="text-red-500"></ng-icon>
+      </div>
+      <div>
+        <h3 class="text-slate-900 font-bold text-base">Supprimer le tenant</h3>
+        <p class="text-slate-400 text-xs mt-0.5"><strong class="text-slate-700">{{selectedTenant?.nom}}</strong></p>
+      </div>
+    </div>
+    <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5">
+      <p class="text-red-700 text-sm font-semibold mb-1">⚠️ Action irréversible</p>
+      <p class="text-red-600 text-xs">Toutes les données de ce tenant (commandes, tiers, contacts, livraisons, retours) seront définitivement supprimées.</p>
+    </div>
+    <div class="flex gap-3 justify-end pt-4 border-t border-slate-100">
+      <button (click)="closeDeleteModal()" class="px-4 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-sm font-medium rounded-lg transition-all">Annuler</button>
+      <button (click)="confirmDelete()" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-all">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>

@@ -1,396 +1,472 @@
-<div class="page-header">
-  <h1>📦 Commandes</h1>
-  <p>{{filtered.length}} commande(s) affichée(s) sur {{commandes.length}}</p>
+<!-- PAGE HEADER -->
+<div class="flex items-start justify-between flex-wrap gap-3 mb-6">
+  <div>
+    <h1 class="font-display font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
+      <ng-icon name="heroCube" size="24" class="text-blue-600"></ng-icon>
+      Commandes
+    </h1>
+    <p class="text-slate-400 text-sm mt-1">{{filtered.length}} commande(s) affichée(s) sur {{commandes.length}}</p>
+  </div>
 </div>
 
-<div *ngIf="loading" class="empty-state">
-  <div class="icon">⏳</div>
-  <h3>Chargement des commandes...</h3>
+<!-- LOADING -->
+<div *ngIf="loading" class="flex flex-col items-center justify-center py-16 text-slate-400">
+  <ng-icon name="heroClock" size="40" class="mb-4 opacity-40 animate-spin"></ng-icon>
+  <h3 class="font-display font-bold text-slate-600">Chargement des commandes...</h3>
 </div>
 
 <div *ngIf="!loading">
-
-  <div class="toolbar">
-    <div class="search-bar" style="flex:1;min-width:200px;margin:0">
-      <span>🔍</span>
+  <!-- TOOLBAR -->
+  <div class="flex flex-wrap gap-2 mb-4 items-center">
+    <div class="flex items-center gap-2 bg-white border-[1.5px] border-slate-200 rounded-md px-3 py-2 flex-1 min-w-[220px] focus-within:border-blue-500 focus-within:ring-3 focus-within:ring-blue-100 transition-all">
+      <ng-icon name="heroMagnifyingGlass" size="16" class="text-slate-400 shrink-0"></ng-icon>
       <input [(ngModel)]="search" (ngModelChange)="applyFilters()"
-             placeholder="Rechercher client, produit, tél, ref, tiers...">
+             placeholder="Rechercher client, produit, tél, ref, tiers..."
+             class="flex-1 bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400">
     </div>
-    <select [(ngModel)]="filterSource" (ngModelChange)="applyFilters()" class="filter-select">
+    <select [(ngModel)]="filterSource" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Source (toutes)</option>
-      <option value="manuel">✏️ Manuel</option>
-      <option value="prestashop">🛒 PrestaShop</option>
-      <option value="woocommerce">🛍️ WooCommerce</option>
+      <option value="manuel">Manuel</option>
+      <option value="prestashop">PrestaShop</option>
+      <option value="woocommerce">WooCommerce</option>
+      <option value="shopify">Shopify</option>
     </select>
-    <select [(ngModel)]="filterTiers" (ngModelChange)="applyFilters()" class="filter-select">
+    <select [(ngModel)]="filterTiers" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Tiers (tous)</option>
       <option *ngFor="let t of tiers" [value]="t.id">{{t.nom}}</option>
     </select>
-    <select [(ngModel)]="filterConf" (ngModelChange)="applyFilters()" class="filter-select">
+    <select [(ngModel)]="filterConf" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Confirmation (tous)</option>
       <option *ngFor="let s of config.statutsConfirmation" [value]="s">{{s}}</option>
     </select>
-    <select [(ngModel)]="filterLivr" (ngModelChange)="applyFilters()" class="filter-select">
+    <select [(ngModel)]="filterLivr" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Livraison (tous)</option>
       <option *ngFor="let s of config.statutsLivraison" [value]="s">{{s}}</option>
     </select>
-    <select [(ngModel)]="filterAgent" (ngModelChange)="applyFilters()" class="filter-select">
-      <option value="">Agent (tous)</option>
-      <option *ngFor="let a of config.agents" [value]="a">{{a}}</option>
-    </select>
-    <button class="btn btn-primary" (click)="openAdd()">+ Nouvelle commande</button>
+    <button (click)="openAdd()"
+            class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-md shadow-btn transition-all hover:-translate-y-0.5 whitespace-nowrap">
+      <ng-icon name="heroPlusCircle" size="16"></ng-icon>
+      Nouvelle commande
+    </button>
+    <button (click)="exportCSV()"
+            class="flex items-center gap-1.5 bg-white hover:bg-slate-50 border-[1.5px] border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 font-semibold text-sm px-4 py-2 rounded-md transition-all whitespace-nowrap">
+      <ng-icon name="heroArrowDownTray" size="16"></ng-icon>
+      Export CSV
+    </button>
   </div>
 
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Ref</th>
-          <th>Source</th>
-          <th>Tiers</th>
-          <th>Désignation</th>
-          <th>Client</th>
-          <th>Email</th>
-          <th>Téléphone</th>
-          <th>Ville</th>
-          <th>Pays</th>
-          <th>Qté</th>
-          <th>Prix Total (DH)</th>
-          <th>Frais Liv.</th>
-          <th>Mode Paiement</th>
-          <th>Statut E-commerce</th>
-          <th>Agent</th>
-          <th>Confirmation</th>
-          <th>Livraison</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of filtered">
-          <td>{{c.date}}</td>
-          <td><code style="color:var(--accent);font-size:0.78rem">{{c.ref}}</code></td>
-          <td>
-            <span class="badge" [class]="getSourceBadge(c.source || 'manuel')">
-              {{getSourceIcon(c.source || 'manuel')}} {{c.source || 'manuel'}}
-            </span>
-          </td>
-          <td>
-            <span *ngIf="c.tiersNom" style="color:var(--accent);font-weight:600">{{c.tiersNom}}</span>
-            <span *ngIf="!c.tiersNom" style="color:var(--text2)">—</span>
-          </td>
-          <td>{{c.designation}}</td>
-          <td><strong>{{c.client}}</strong></td>
-          <td style="color:var(--text2);font-size:0.85rem">{{c.emailClient || '—'}}</td>
-          <td>{{c.telephone}}</td>
-          <td>{{c.ville || '—'}}</td>
-          <td>{{c.pays || '—'}}</td>
-          <td style="text-align:center">{{c.quantite}}</td>
-          <td style="text-align:right;font-weight:600;color:var(--success)">
-            {{c.prixVenteTotal | number}} DH
-          </td>
-          <td style="text-align:right">{{c.fraisLivraison | number}} DH</td>
-          <td style="color:var(--text2);font-size:0.85rem">{{c.modePaiement || '—'}}</td>
-          <td>
-            <span *ngIf="c.statutEcommerce" class="badge" [class]="getStatutEcommerceBadge(c.statutEcommerce)">
-              {{c.statutEcommerce}}
-            </span>
-            <span *ngIf="!c.statutEcommerce" style="color:var(--text2)">—</span>
-          </td>
-          <td>{{c.agent}}</td>
-          <td>
-            <span class="badge" [class]="getBadgeClass(c.confirmation)">
-              {{c.confirmation || '—'}}
-            </span>
-          </td>
-          <td>
-            <span class="badge" [class]="getBadgeClass(c.livraison)">
-              {{c.livraison || '—'}}
-            </span>
-          </td>
-          <td>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button class="btn btn-secondary btn-sm" (click)="openEdit(c)" title="Modifier">✏️</button>
-              <button class="btn btn-danger btn-sm" (click)="delete(c.id!)" title="Supprimer">🗑️</button>
-              <button class="btn btn-sm"
-                      style="background:rgba(56,249,215,0.15);border:1px solid rgba(56,249,215,0.3);color:var(--info)"
-                      (click)="openLivraisonModal(c)" title="Envoyer vers livraison">
-                🚚
-              </button>
-
-              <!-- ── Bouton email ───────────────────────────────────── -->
-              <button class="btn btn-sm"
-                      [title]="c.emailClient ? 'Envoyer confirmation à ' + c.emailClient : 'Pas d\'email client'"
-                      [disabled]="!c.emailClient || sendingEmailId === c.id"
-                      [style.opacity]="!c.emailClient ? '0.35' : '1'"
-                      [style.cursor]="!c.emailClient ? 'not-allowed' : 'pointer'"
-                      style="background:rgba(90,84,230,0.15);border:1px solid rgba(90,84,230,0.4);color:var(--accent)"
-                      (click)="sendEmail(c)">
-                <span *ngIf="sendingEmailId !== c.id">📧</span>
-                <span *ngIf="sendingEmailId === c.id">⏳</span>
-              </button>
-              <!-- ───────────────────────────────────────────────────── -->
-
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="filtered.length === 0">
-          <td colspan="19">
-            <div class="empty-state">
-              <div class="icon">📭</div>
-              <h3>Aucune commande trouvée</h3>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- TABLE -->
+  <div class="bg-white border border-slate-200 rounded-xl shadow-card overflow-hidden">
+    <div class="table-wrapper">
+      <table class="w-full min-w-max border-collapse text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b-2 border-slate-200">
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Date</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Ref</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Source</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Tiers</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Désignation</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Client</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Email</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Téléphone</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Ville</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Pays</th>
+            <th class="px-4 py-3 text-center text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Qté</th>
+            <th class="px-4 py-3 text-right text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Prix (DH)</th>
+            <th class="px-4 py-3 text-right text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Frais</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Paiement</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Statut E-com</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Confirmation</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Livraison</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filtered" class="border-b border-slate-100 hover:bg-slate-50 transition-colors duration-100">
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{c.date}}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <code class="text-blue-600 font-mono text-[0.78rem] bg-blue-50 px-1.5 py-0.5 rounded">{{c.ref}}</code>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' + getSourceBadge(c.source || 'manuel')">
+                <ng-icon [name]="getSourceIcon(c.source || 'manuel')" size="11"></ng-icon>
+                {{c.source || 'manuel'}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span *ngIf="c.tiersNom" class="text-blue-600 font-semibold">{{c.tiersNom}}</span>
+              <span *ngIf="!c.tiersNom" class="text-slate-300">—</span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{c.designation}}</td>
+            <td class="px-4 py-3 whitespace-nowrap font-semibold text-slate-900">{{c.client}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-400 text-[0.82rem]">{{c.emailClient || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{c.telephone}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{c.ville || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{c.pays || '—'}}</td>
+            <td class="px-4 py-3 text-center whitespace-nowrap text-slate-700">{{c.quantite}}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap font-semibold text-emerald-600">{{c.prixVenteTotal | number}} DH</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap text-slate-600">{{c.fraisLivraison | number}} DH</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-400 text-[0.82rem]">{{c.modePaiement || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span *ngIf="c.statutEcommerce" [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' + getStatutEcommerceBadge(c.statutEcommerce)">
+                {{c.statutEcommerce}}
+              </span>
+              <span *ngIf="!c.statutEcommerce" class="text-slate-300">—</span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' + getBadgeClass(c.confirmation)">
+                {{c.confirmation || '—'}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' + getBadgeClass(c.livraison)">
+                {{c.livraison || '—'}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <div class="flex items-center gap-1.5">
+                <!-- Modifier -->
+                <button (click)="openEdit(c)" title="Modifier"
+                        class="p-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-500 rounded-md transition-all">
+                  <ng-icon name="heroPencilSquare" size="14"></ng-icon>
+                </button>
+                <!-- Supprimer -->
+                <button (click)="delete(c.id!)" title="Supprimer"
+                        class="p-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-500 rounded-md transition-all">
+                  <ng-icon name="heroTrash" size="14"></ng-icon>
+                </button>
+                <!-- Livraison -->
+                <button (click)="openLivraisonModal(c)" title="Créer livraison"
+                        class="p-1.5 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 text-cyan-600 rounded-md transition-all">
+                  <ng-icon name="heroTruck" size="14"></ng-icon>
+                </button>
+                <!-- ✅ Email — ouvre modal au lieu d'alert -->
+                <button (click)="openEmailModal(c)"
+                        [disabled]="!c.emailClient || sendingEmailId === c.id"
+                        [class.opacity-35]="!c.emailClient"
+                        [title]="c.emailClient ? 'Envoyer email à ' + c.emailClient : 'Pas d\'email client'"
+                        class="p-1.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 rounded-md transition-all">
+                  <ng-icon [name]="sendingEmailId === c.id ? 'heroArrowPath' : 'heroEnvelope'" size="14"
+                           [class.animate-spin]="sendingEmailId === c.id"></ng-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="18" class="py-16 text-center">
+              <ng-icon name="heroDocumentText" size="40" class="mx-auto mb-4 text-slate-300 block"></ng-icon>
+              <p class="font-display font-bold text-slate-500">Aucune commande trouvée</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <!-- MODAL COMMANDE -->
-<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouvelle'}} commande</h3>
-
-    <!-- Autocomplete Tiers -->
-    <div class="form-group">
-      <label>Tiers</label>
-      <div class="autocomplete-wrapper">
-        <div class="autocomplete-input-row">
-          <input type="text"
-                 [(ngModel)]="tiersSearch"
-                 (ngModelChange)="onTiersSearchChange()"
+<div *ngIf="showModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" (click)="closeModal()">
+  <div class="bg-white rounded-2xl shadow-card-lg w-full max-w-2xl max-h-[92vh] overflow-y-auto p-7" (click)="$event.stopPropagation()">
+    <h3 class="font-display font-black text-lg text-slate-900 mb-5 pb-4 border-b border-slate-100 flex items-center gap-2">
+      <ng-icon [name]="editMode ? 'heroPencilSquare' : 'heroPlusCircle'" size="20" class="text-blue-600"></ng-icon>
+      {{editMode ? 'Modifier' : 'Nouvelle'}} commande
+    </h3>
+    <!-- Tiers autocomplete -->
+    <div class="mb-4">
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tiers</label>
+      <div class="relative">
+        <div class="flex items-center gap-2">
+          <input type="text" [(ngModel)]="tiersSearch" (ngModelChange)="onTiersSearchChange()"
                  (focus)="showTiersSuggestions = tiersSearch.length > 0 || tiersFiltered.length > 0"
-                 (blur)="hideSuggestions()"
-                 placeholder="Rechercher un tiers...">
-          <button *ngIf="form.tiersId" type="button" class="btn-clear" (click)="clearTiers()">✕</button>
+                 (blur)="hideSuggestions()" placeholder="Rechercher un tiers..."
+                 class="flex-1 border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+          <button *ngIf="form.tiersId" type="button" (click)="clearTiers()"
+                  class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all">
+            <ng-icon name="heroXMark" size="16"></ng-icon>
+          </button>
         </div>
-        <div class="badge livree" *ngIf="form.tiersId" style="margin-top:4px;display:inline-block">
-          ✅ {{tiersSelectedNom}}
-        </div>
-        <div class="autocomplete-suggestions" *ngIf="showTiersSuggestions && tiersFiltered.length > 0">
-          <div class="autocomplete-item"
-               *ngFor="let t of tiersFiltered | slice:0:10"
-               (mousedown)="selectTiers(t)">
-            <span style="color:var(--accent);font-weight:600">{{t.referent}}</span>
-            <span style="margin-left:8px">{{t.nom}}</span>
-            <span style="color:var(--text2);font-size:0.75rem;margin-left:8px">
-              {{t.typeTiers?.join(' + ')}}
-            </span>
+        <span *ngIf="form.tiersId" class="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[0.68rem] font-bold">
+          <ng-icon name="heroCheckCircle" size="12"></ng-icon> {{tiersSelectedNom}}
+        </span>
+        <div *ngIf="showTiersSuggestions && tiersFiltered.length > 0"
+             class="absolute top-full left-0 right-0 mt-1 bg-white border-[1.5px] border-slate-200 rounded-xl shadow-card-lg z-50 max-h-56 overflow-y-auto">
+          <div *ngFor="let t of tiersFiltered | slice:0:10" (mousedown)="selectTiers(t)"
+               class="px-3.5 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 text-sm">
+            <span class="text-blue-600 font-semibold">{{t.referent}}</span>
+            <span class="ml-2 text-slate-700">{{t.nom}}</span>
+            <span class="ml-2 text-slate-400 text-[0.74rem]">{{t.typeTiers?.join(' + ')}}</span>
           </div>
         </div>
-        <div class="autocomplete-suggestions" *ngIf="showTiersSuggestions && tiersFiltered.length === 0">
-          <div class="autocomplete-empty">Aucun tiers trouvé</div>
+        <div *ngIf="showTiersSuggestions && tiersFiltered.length === 0"
+             class="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-card-lg z-50 p-4 text-center text-slate-400 text-sm">
+          Aucun tiers trouvé
         </div>
       </div>
     </div>
-
-    <div class="form-row cols-3">
-      <div class="form-group">
-        <label>Date *</label>
-        <input type="date" [(ngModel)]="form.date" [class.input-error]="errors['date']">
-        <span class="error" *ngIf="errors['date']">{{errors['date']}}</span>
+    <div class="grid grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date *</label>
+        <input type="date" [(ngModel)]="form.date" [class.border-red-400]="errors['date']"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+        <span *ngIf="errors['date']" class="text-red-500 text-xs mt-1 block">{{errors['date']}}</span>
       </div>
-      <div class="form-group">
-        <label>Référence</label>
-        <input type="text" [(ngModel)]="form.ref" placeholder="REF001">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Référence</label>
+        <input type="text" [(ngModel)]="form.ref" placeholder="REF001"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
-      <div class="form-group">
-        <label>Type commande</label>
-        <select [(ngModel)]="form.typeCde">
-          <option>Site web</option>
-          <option>WhatsApp</option>
-          <option>Téléphone</option>
-          <option>PrestaShop</option>
-          <option>WooCommerce</option>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Type commande</label>
+        <select [(ngModel)]="form.typeCde" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
+          <option>Site web</option><option>WhatsApp</option><option>Téléphone</option>
+          <option>PrestaShop</option><option>WooCommerce</option><option>Shopify</option>
         </select>
       </div>
     </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Client *</label>
-        <input type="text" [(ngModel)]="form.client" [class.input-error]="errors['client']"
-               placeholder="Nom du client">
-        <span class="error" *ngIf="errors['client']">{{errors['client']}}</span>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Client *</label>
+        <input type="text" [(ngModel)]="form.client" [class.border-red-400]="errors['client']" placeholder="Nom du client"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['client']" class="text-red-500 text-xs mt-1 block">{{errors['client']}}</span>
       </div>
-      <div class="form-group">
-        <label>Email client</label>
-        <input type="email" [(ngModel)]="form.emailClient" placeholder="client@exemple.com">
-      </div>
-    </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Téléphone *</label>
-        <input type="text" [(ngModel)]="form.telephone" [class.input-error]="errors['telephone']"
-               placeholder="0600000000">
-        <span class="error" *ngIf="errors['telephone']">{{errors['telephone']}}</span>
-      </div>
-      <div class="form-group">
-        <label>Désignation produit *</label>
-        <input type="text" [(ngModel)]="form.designation" [class.input-error]="errors['designation']"
-               placeholder="Nom du produit">
-        <span class="error" *ngIf="errors['designation']">{{errors['designation']}}</span>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Email client</label>
+        <input type="email" [(ngModel)]="form.emailClient" placeholder="client@exemple.com"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
-
-    <div class="form-row cols-3">
-      <div class="form-group">
-        <label>Adresse</label>
-        <input type="text" [(ngModel)]="form.adresse">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Téléphone *</label>
+        <input type="text" [(ngModel)]="form.telephone" [class.border-red-400]="errors['telephone']" placeholder="0600000000"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['telephone']" class="text-red-500 text-xs mt-1 block">{{errors['telephone']}}</span>
       </div>
-      <div class="form-group">
-        <label>Ville *</label>
-        <select [(ngModel)]="form.ville" [class.input-error]="errors['ville']">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Désignation *</label>
+        <input type="text" [(ngModel)]="form.designation" [class.border-red-400]="errors['designation']" placeholder="Nom du produit"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['designation']" class="text-red-500 text-xs mt-1 block">{{errors['designation']}}</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Adresse</label>
+        <input type="text" [(ngModel)]="form.adresse"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Ville *</label>
+        <select [(ngModel)]="form.ville" [class.border-red-400]="errors['ville']"
+                class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option value="">-- Choisir --</option>
           <option *ngFor="let v of getVilles()" [value]="v">{{v}}</option>
         </select>
-        <span class="error" *ngIf="errors['ville']">{{errors['ville']}}</span>
+        <span *ngIf="errors['ville']" class="text-red-500 text-xs mt-1 block">{{errors['ville']}}</span>
       </div>
-      <div class="form-group">
-        <label>Pays</label>
-        <input type="text" [(ngModel)]="form.pays" placeholder="Maroc">
-      </div>
-    </div>
-
-    <div class="form-row cols-3">
-      <div class="form-group">
-        <label>Quantité *</label>
-        <input type="number" [(ngModel)]="form.quantite" min="1"
-               [class.input-error]="errors['quantite']">
-        <span class="error" *ngIf="errors['quantite']">{{errors['quantite']}}</span>
-      </div>
-      <div class="form-group">
-        <label>Prix vente total (DH) *</label>
-        <input type="number" [(ngModel)]="form.prixVenteTotal"
-               [class.input-error]="errors['prixVenteTotal']">
-        <span class="error" *ngIf="errors['prixVenteTotal']">{{errors['prixVenteTotal']}}</span>
-      </div>
-      <div class="form-group">
-        <label>Frais livraison (DH)</label>
-        <input type="number" [(ngModel)]="form.fraisLivraison">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Pays</label>
+        <input type="text" [(ngModel)]="form.pays" placeholder="Maroc"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Mode paiement</label>
-        <input type="text" [(ngModel)]="form.modePaiement" placeholder="CB, virement...">
+    <div class="grid grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Quantité *</label>
+        <input type="number" [(ngModel)]="form.quantite" min="1" [class.border-red-400]="errors['quantite']"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['quantite']" class="text-red-500 text-xs mt-1 block">{{errors['quantite']}}</span>
       </div>
-      <div class="form-group">
-        <label>Statut E-commerce</label>
-        <input type="text" [(ngModel)]="form.statutEcommerce" placeholder="Terminée, En cours...">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Prix total (DH) *</label>
+        <input type="number" [(ngModel)]="form.prixVenteTotal" [class.border-red-400]="errors['prixVenteTotal']"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['prixVenteTotal']" class="text-red-500 text-xs mt-1 block">{{errors['prixVenteTotal']}}</span>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Frais livraison (DH)</label>
+        <input type="number" [(ngModel)]="form.fraisLivraison"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
-
-    <div class="form-row cols-3">
-      <div class="form-group">
-        <label>Agent</label>
-        <select [(ngModel)]="form.agent">
-          <option value="">— Sélectionner —</option>
-          <option *ngFor="let a of config.agents" [value]="a">{{a}}</option>
-        </select>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Mode paiement</label>
+        <input type="text" [(ngModel)]="form.modePaiement" placeholder="CB, virement..."
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
-      <div class="form-group">
-        <label>Confirmation</label>
-        <select [(ngModel)]="form.confirmation">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Statut E-commerce</label>
+        <input type="text" [(ngModel)]="form.statutEcommerce" placeholder="Terminée, En cours..."
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Confirmation</label>
+        <select [(ngModel)]="form.confirmation" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option value="">— Sélectionner —</option>
           <option *ngFor="let s of config.statutsConfirmation" [value]="s">{{s}}</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Livraison</label>
-        <select [(ngModel)]="form.livraison">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Livraison</label>
+        <select [(ngModel)]="form.livraison" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option value="">— Sélectionner —</option>
           <option *ngFor="let s of config.statutsLivraison" [value]="s">{{s}}</option>
         </select>
       </div>
     </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>WhatsApp</label>
-        <select [(ngModel)]="form.whatsap">
-          <option value="">—</option>
-          <option>Oui</option>
-          <option>Non</option>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">WhatsApp</label>
+        <select [(ngModel)]="form.whatsap" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
+          <option value="">—</option><option>Oui</option><option>Non</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Commentaire</label>
-        <input type="text" [(ngModel)]="form.commentaire">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Commentaire</label>
+        <input type="text" [(ngModel)]="form.commentaire"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">
+      <button (click)="closeModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-md hover:border-slate-300 transition-all">Annuler</button>
+      <button (click)="save()" class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-btn transition-all">
+        <ng-icon name="heroArchiveBoxArrowDown" size="16"></ng-icon> Enregistrer
+      </button>
     </div>
   </div>
 </div>
 
-<!-- MODAL ENVOI LIVRAISON -->
-<div class="modal-overlay" *ngIf="showLivraisonModal" (click)="closeLivraisonModal()">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <h3>🚚 Envoyer vers livraison</h3>
-
-    <div *ngIf="commandeToLivraison" class="commande-info-box">
-      <div><span class="info-label">Commande</span>
-        <code style="color:var(--accent)">{{commandeToLivraison.ref}}</code></div>
-      <div><span class="info-label">Client</span> {{commandeToLivraison.client}}</div>
-      <div><span class="info-label">Ville</span> {{commandeToLivraison.ville}}</div>
-      <div><span class="info-label">Désignation</span> {{commandeToLivraison.designation}}</div>
+<!-- MODAL LIVRAISON -->
+<div *ngIf="showLivraisonModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" (click)="closeLivraisonModal()">
+  <div class="bg-white rounded-2xl shadow-card-lg w-full max-w-lg p-7" (click)="$event.stopPropagation()">
+    <h3 class="font-display font-black text-lg text-slate-900 mb-5 pb-4 border-b border-slate-100 flex items-center gap-2">
+      <ng-icon name="heroTruck" size="20" class="text-blue-600"></ng-icon>
+      Envoyer vers livraison
+    </h3>
+    <div *ngIf="commandeToLivraison" class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex flex-wrap gap-4 text-sm text-slate-600">
+      <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mr-1">Commande</span>
+        <code class="text-blue-600">{{commandeToLivraison.ref}}</code></div>
+      <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mr-1">Client</span>{{commandeToLivraison.client}}</div>
+      <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mr-1">Ville</span>{{commandeToLivraison.ville}}</div>
     </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>N° Suivi *</label>
-        <input type="text" [(ngModel)]="livraisonForm.numeroSuivi"
-               [class.input-error]="livraisonErrors['numeroSuivi']"
-               placeholder="TRK123456789">
-        <span class="error" *ngIf="livraisonErrors['numeroSuivi']">
-          {{livraisonErrors['numeroSuivi']}}
-        </span>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">N° Suivi *</label>
+        <input type="text" [(ngModel)]="livraisonForm.numeroSuivi" [class.border-red-400]="livraisonErrors['numeroSuivi']" placeholder="TRK123456789"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+        <span *ngIf="livraisonErrors['numeroSuivi']" class="text-red-500 text-xs mt-1 block">{{livraisonErrors['numeroSuivi']}}</span>
       </div>
-      <div class="form-group">
-        <label>Transporteur *</label>
-        <select [(ngModel)]="livraisonForm.transporteur"
-                [class.input-error]="livraisonErrors['transporteur']">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Transporteur *</label>
+        <select [(ngModel)]="livraisonForm.transporteur" [class.border-red-400]="livraisonErrors['transporteur']"
+                class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option value="">— Sélectionner —</option>
-          <option *ngFor="let t of transporteurs" [value]="t">{{t}</option>
+          <option *ngFor="let t of transporteurs" [value]="t">{{t}}</option>
         </select>
-        <span class="error" *ngIf="livraisonErrors['transporteur']">
-          {{livraisonErrors['transporteur']}}
-        </span>
+        <span *ngIf="livraisonErrors['transporteur']" class="text-red-500 text-xs mt-1 block">{{livraisonErrors['transporteur']}}</span>
       </div>
     </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Date Expédition *</label>
-        <input type="date" [(ngModel)]="livraisonForm.dateExpedition"
-               [class.input-error]="livraisonErrors['dateExpedition']">
-        <span class="error" *ngIf="livraisonErrors['dateExpedition']">
-          {{livraisonErrors['dateExpedition']}}
-        </span>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date Expédition *</label>
+        <input type="date" [(ngModel)]="livraisonForm.dateExpedition" [class.border-red-400]="livraisonErrors['dateExpedition']"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+        <span *ngIf="livraisonErrors['dateExpedition']" class="text-red-500 text-xs mt-1 block">{{livraisonErrors['dateExpedition']}}</span>
       </div>
-      <div class="form-group">
-        <label>Statut</label>
-        <select [(ngModel)]="livraisonForm.statut">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Statut</label>
+        <select [(ngModel)]="livraisonForm.statut" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option *ngFor="let s of statuts" [value]="s">{{s}}</option>
         </select>
       </div>
     </div>
+    <div class="mb-4">
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Commentaire</label>
+      <textarea [(ngModel)]="livraisonForm.commentaire" placeholder="Notes..."
+                class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 resize-y min-h-[70px]"></textarea>
+    </div>
+    <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+      <button (click)="closeLivraisonModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-md hover:border-slate-300 transition-all">Annuler</button>
+      <button (click)="sendToLivraison()" class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-btn transition-all">
+        <ng-icon name="heroTruck" size="16"></ng-icon> Envoyer
+      </button>
+    </div>
+  </div>
+</div>
 
-    <div class="form-group">
-      <label>Commentaire</label>
-      <textarea [(ngModel)]="livraisonForm.commentaire" placeholder="Notes..."></textarea>
+<!-- ✅ MODAL EMAIL CONFIRMATION -->
+<div *ngIf="showEmailModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" (click)="closeEmailModal()">
+  <div class="bg-white rounded-2xl shadow-card-lg w-full max-w-sm p-6" (click)="$event.stopPropagation()">
+
+    <!-- En-tête -->
+    <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100">
+      <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+        <ng-icon name="heroEnvelope" size="20" class="text-indigo-600"></ng-icon>
+      </div>
+      <div>
+        <h3 class="font-display font-bold text-slate-900 text-base">Envoyer email de confirmation</h3>
+        <p class="text-slate-400 text-xs mt-0.5">Commande <code class="text-blue-600 bg-blue-50 px-1 rounded">{{commandeForEmail?.ref}}</code></p>
+      </div>
     </div>
 
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeLivraisonModal()">Annuler</button>
-      <button class="btn btn-primary" (click)="sendToLivraison()">🚚 Envoyer</button>
+    <!-- Détails -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-5 space-y-2">
+      <div class="flex items-center gap-2 text-sm">
+        <ng-icon name="heroUser" size="14" class="text-slate-400 shrink-0"></ng-icon>
+        <span class="text-slate-500">Client :</span>
+        <span class="font-semibold text-slate-800">{{commandeForEmail?.client}}</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <ng-icon name="heroEnvelope" size="14" class="text-slate-400 shrink-0"></ng-icon>
+        <span class="text-slate-500">Email :</span>
+        <span class="font-semibold text-indigo-600">{{commandeForEmail?.emailClient}}</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <ng-icon name="heroCube" size="14" class="text-slate-400 shrink-0"></ng-icon>
+        <span class="text-slate-500">Produit :</span>
+        <span class="font-semibold text-slate-800">{{commandeForEmail?.designation}}</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <ng-icon name="heroBanknotes" size="14" class="text-slate-400 shrink-0"></ng-icon>
+        <span class="text-slate-500">Montant :</span>
+        <span class="font-semibold text-emerald-600">{{commandeForEmail?.prixVenteTotal | number}} DH</span>
+      </div>
+    </div>
+
+    <!-- Résultat envoi -->
+    <div *ngIf="emailResult" class="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold"
+         [class.bg-emerald-50]="emailResult === 'success'"
+         [class.text-emerald-700]="emailResult === 'success'"
+         [class.border]="emailResult"
+         [class.border-emerald-200]="emailResult === 'success'"
+         [class.bg-red-50]="emailResult === 'error'"
+         [class.text-red-700]="emailResult === 'error'"
+         [class.border-red-200]="emailResult === 'error'">
+      <ng-icon [name]="emailResult === 'success' ? 'heroCheckCircle' : 'heroXCircle'" size="16"></ng-icon>
+      {{emailResult === 'success' ? 'Email envoyé avec succès !' : 'Échec de l\'envoi. Vérifiez la configuration SMTP.'}}
+    </div>
+
+    <!-- Boutons -->
+    <div class="flex gap-3 justify-end">
+      <button (click)="closeEmailModal()"
+              class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:border-slate-300 rounded-lg transition-all">
+        {{emailResult ? 'Fermer' : 'Annuler'}}
+      </button>
+      <button *ngIf="!emailResult" (click)="confirmSendEmail()"
+              [disabled]="sendingEmailId === commandeForEmail?.id"
+              class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all disabled:opacity-50">
+        <ng-icon [name]="sendingEmailId === commandeForEmail?.id ? 'heroArrowPath' : 'heroEnvelope'" size="14"
+                 [class.animate-spin]="sendingEmailId === commandeForEmail?.id"></ng-icon>
+        {{sendingEmailId === commandeForEmail?.id ? 'Envoi...' : 'Envoyer'}}
+      </button>
     </div>
   </div>
 </div>

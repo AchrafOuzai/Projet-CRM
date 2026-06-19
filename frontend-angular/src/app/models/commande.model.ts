@@ -9,7 +9,7 @@ export interface Commande {
   quantite: number;
   prixVenteTotal: number;
   typeCde: string;
-  agent: string;
+  agent?: string;
   confirmation: string;
   livraison: string;
   ref: string;

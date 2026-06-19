@@ -64,25 +64,29 @@ class Commande
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private $createdAt = null;
 
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private $source;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private $statutEcommerce;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private $modePaiement;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    private $pays;
+
+    #[ORM\Column(type: 'string', length: 150, nullable: true)]
+    private $emailClient;
+
     #[ORM\ManyToOne(targetEntity: Tiers::class)]
     #[ORM\JoinColumn(name: 'tiers_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private $tiers = null;
 
-    // Champs e-commerce
-    #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private $source; // 'prestashop', 'woocommerce', 'manuel'
-
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private $statutEcommerce; // statut original depuis la plateforme
-
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private $modePaiement; // Payment method
-
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
-    private $pays; // Delivery country
-
-    #[ORM\Column(type: 'string', length: 150, nullable: true)]
-    private $emailClient; // Email du client
+    // ── NOUVEAU : isolation multi-tenant ─────────────────
+    #[ORM\ManyToOne(targetEntity: Tenant::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private $tenant = null;
 
     public function getId()                { return $this->id; }
     public function getDate()              { return $this->date; }
@@ -131,4 +135,6 @@ class Commande
     public function setPays($v)            { $this->pays = $v; return $this; }
     public function getEmailClient()       { return $this->emailClient; }
     public function setEmailClient($v)     { $this->emailClient = $v; return $this; }
+    public function getTenant()            { return $this->tenant; }
+    public function setTenant($v)          { $this->tenant = $v; return $this; }
 }

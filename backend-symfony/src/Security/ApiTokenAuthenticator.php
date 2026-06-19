@@ -2,7 +2,11 @@
 
 namespace App\Security;
 
-use App\Repository\ApiTokenRepository;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Firebase\JWT\ExpiredException;
+use Firebase\JWT\SignatureInvalidException;
+use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,11 +21,13 @@ use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface
 
 class ApiTokenAuthenticator extends AbstractAuthenticator implements AuthenticationEntryPointInterface
 {
-    private $tokenRepository;
+    private UserRepository $userRepository;
+    private string $jwtSecret;
 
-    public function __construct(ApiTokenRepository $tokenRepository)
+    public function __construct(UserRepository $userRepository, string $jwtSecret)
     {
-        $this->tokenRepository = $tokenRepository;
+        $this->userRepository = $userRepository;
+        $this->jwtSecret      = $jwtSecret;
     }
 
     public function supports(Request $request): ?bool
@@ -33,28 +39,41 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
     public function authenticate(Request $request): Passport
     {
         $authHeader = $request->headers->get('Authorization');
-        $token = substr($authHeader, 7);
+        $token      = substr($authHeader, 7); // Enlève "Bearer "
 
-        $apiToken = $this->tokenRepository->findValidToken($token);
+        try {
+            // Décode et vérifie le JWT
+            $payload = JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
+            $email   = $payload->sub;
 
-        if (!$apiToken) {
-            throw new CustomUserMessageAuthenticationException('Token invalide ou expiré');
+        } catch (ExpiredException $e) {
+            throw new CustomUserMessageAuthenticationException('Token expiré');
+        } catch (SignatureInvalidException $e) {
+            throw new CustomUserMessageAuthenticationException('Signature JWT invalide');
+        } catch (\Exception $e) {
+            throw new CustomUserMessageAuthenticationException('Token JWT invalide');
+        }
+
+        // Vérifie que l'utilisateur existe toujours en base
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$user) {
+            throw new CustomUserMessageAuthenticationException('Utilisateur introuvable');
         }
 
         return new SelfValidatingPassport(
-            new UserBadge($apiToken->getUser()->getUserIdentifier())
+            new UserBadge($email)
         );
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        return null;
+        return null; // Continue la requête normalement
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
         return new JsonResponse([
-            'error' => 'Token invalide ou expiré',
+            'error'   => 'Token invalide ou expiré',
             'message' => $exception->getMessage()
         ], 401);
     }
@@ -62,8 +81,8 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
     public function start(Request $request, AuthenticationException $authException = null): Response
     {
         return new JsonResponse([
-            'error' => 'Authentication required',
-            'message' => 'Token manquant ou invalide'
+            'error'   => 'Authentication required',
+            'message' => 'Token JWT manquant ou invalide'
         ], 401);
     }
 }

@@ -6,6 +6,7 @@ use App\Entity\Commande;
 use App\Entity\EcommerceConfig;
 use App\Entity\Tiers;
 use App\Entity\Contact;
+use App\Entity\Tenant;
 use App\Repository\TiersRepository;
 use App\Repository\ContactRepository;
 use App\Repository\CommandeRepository;
@@ -17,6 +18,7 @@ class ShopifyService
     private $tiersRepo;
     private $contactRepo;
     private $commandeRepo;
+    private int $referentCounter = 0;
 
     public function __construct(
         EntityManagerInterface $em,
@@ -29,6 +31,20 @@ class ShopifyService
         $this->contactRepo  = $contactRepo;
         $this->commandeRepo = $commandeRepo;
     }
+
+    // ✅ Ajoute en haut de chaque service, appelé avant curlRequest
+private function resolveUrl(string $url): string
+{
+    // En Docker, localhost → host.docker.internal
+    if (getenv('DOCKERIZED') === 'true') {
+        return str_replace(
+            ['http://localhost', 'https://localhost'],
+            ['http://host.docker.internal', 'https://host.docker.internal'],
+            $url
+        );
+    }
+    return $url;
+}
 
     private function curlRequest(string $url, string $accessToken): array
     {
@@ -49,70 +65,26 @@ class ShopifyService
         return ['response' => $response, 'httpCode' => $httpCode, 'error' => $error];
     }
 
-    /**
-     * Extraire le nom depuis les données Shopify.
-     * Les clients Shopify de test n'ont souvent pas first_name/last_name/email visibles.
-     * On utilise l'ID Shopify comme fallback identifiant unique.
-     */
     private function extractNom(array $customer, array $billing = [], array $shipping = []): string
     {
-        // Priorité 1 : first_name + last_name depuis customer
-        $firstName = trim($customer['first_name'] ?? '');
-        $lastName  = trim($customer['last_name']  ?? '');
-        $nom       = trim($firstName . ' ' . $lastName);
-        if ($nom) return $nom;
-
-        // Priorité 2 : champ 'name' direct
-        $nom = trim($customer['name'] ?? '');
-        if ($nom) return $nom;
-
-        // Priorité 3 : first_name + last_name depuis billing
-        $firstName = trim($billing['first_name'] ?? '');
-        $lastName  = trim($billing['last_name']  ?? '');
-        $nom       = trim($firstName . ' ' . $lastName);
-        if ($nom) return $nom;
-
-        // Priorité 4 : name depuis billing
-        $nom = trim($billing['name'] ?? '');
-        if ($nom) return $nom;
-
-        // Priorité 5 : first_name + last_name depuis shipping
-        $firstName = trim($shipping['first_name'] ?? '');
-        $lastName  = trim($shipping['last_name']  ?? '');
-        $nom       = trim($firstName . ' ' . $lastName);
-        if ($nom) return $nom;
-
-        // Priorité 6 : partie avant @ de l'email
+        foreach ([$customer, $billing, $shipping] as $src) {
+            $nom = trim(($src['first_name'] ?? '') . ' ' . ($src['last_name'] ?? ''));
+            if ($nom) return $nom;
+            $nom = trim($src['name'] ?? '');
+            if ($nom) return $nom;
+        }
         $email = $customer['email'] ?? $billing['email'] ?? null;
         if ($email) return explode('@', $email)[0];
-
-        // Priorité 7 : utiliser l'ID Shopify comme nom unique
         if (!empty($customer['id'])) return 'Client-SH-' . $customer['id'];
-
         return 'Client Shopify';
     }
 
-    /**
-     * Anti-doublon basé sur l'ID Shopify stocké dans nomAlternatif
-     * car email/téléphone peuvent être absents.
-     */
-    private function findExistingTiersByShopifyId(int $shopifyId): ?Tiers
+    private function findExistingTiersByShopifyId(int $shopifyId, ?Tenant $tenant): ?Tiers
     {
-        return $this->tiersRepo->findOneBy(['nomAlternatif' => 'SH-' . $shopifyId]);
-    }
-
-    private function mapStatut(string $status): string
-    {
-        $map = [
-            'pending'            => 'En attente',
-            'authorized'         => 'Autorisée',
-            'partially_paid'     => 'Partiellement payée',
-            'paid'               => 'Payée',
-            'partially_refunded' => 'Partiellement remboursée',
-            'refunded'           => 'Remboursée',
-            'voided'             => 'Annulée',
-        ];
-        return $map[$status] ?? ucfirst($status);
+        return $this->tiersRepo->findOneBy([
+            'nomAlternatif' => 'SH-' . $shopifyId,
+            'tenant'        => $tenant
+        ]);
     }
 
     private function mapFulfillment(string $status): string
@@ -130,31 +102,26 @@ class ShopifyService
     {
         $url    = rtrim($shopUrl, '/') . '/admin/api/2024-01/shop.json';
         $result = $this->curlRequest($url, $accessToken);
-
         if ($result['error'])
             return ['success' => false, 'message' => 'Erreur curl: ' . $result['error']];
-
         if ($result['httpCode'] === 200) {
             $data = json_decode($result['response'], true);
-            return [
-                'success' => true,
-                'message' => 'Connexion Shopify réussie',
-                'name'    => $data['shop']['name'] ?? parse_url($shopUrl, PHP_URL_HOST)
-            ];
+            return ['success' => true, 'message' => 'Connexion Shopify réussie',
+                    'name' => $data['shop']['name'] ?? parse_url($shopUrl, PHP_URL_HOST)];
         }
-
-        return [
-            'success' => false,
-            'message' => 'HTTP ' . $result['httpCode'] . ' : ' . substr($result['response'], 0, 200)
-        ];
+        return ['success' => false,
+                'message' => 'HTTP ' . $result['httpCode'] . ' : ' . substr($result['response'], 0, 200)];
     }
 
     public function syncOrders(EcommerceConfig $config): array
     {
+        $this->referentCounter = 0; // ✅ Reset
+        $tenant      = $config->getTenant();
         $shopUrl     = rtrim($config->getShopUrl(), '/');
         $accessToken = $config->getApiKey();
         $lastId      = $config->getLastOrderId() ?? 0;
         $newOrders   = 0;
+        $updOrders   = 0;
         $errors      = [];
 
         $url    = $shopUrl . '/admin/api/2024-01/orders.json?status=any&limit=50&order=id+asc'
@@ -172,18 +139,25 @@ class ShopifyService
         foreach ($orders as $order) {
             try {
                 $ref      = 'SH-' . $order['id'];
-                $existing = $this->commandeRepo->findOneBy(['ref' => $ref]);
+                $existing = $this->commandeRepo->findOneBy(['ref' => $ref, 'tenant' => $tenant]);
+
                 if ($existing) {
+                    $existing->setStatutEcommerce($this->mapFulfillment($order['fulfillment_status'] ?? 'unfulfilled'));
+                    $existing->setPrixVenteTotal((float)($order['total_price'] ?? 0));
+                    $existing->setModePaiement($order['payment_gateway'] ?? '');
+                    $existing->setFraisLivraison(
+                        (float)($order['total_shipping_price_set']['shop_money']['amount'] ?? 0)
+                    );
                     if ((int)$order['id'] > $lastId) $lastId = (int)$order['id'];
+                    $updOrders++;
                     continue;
                 }
 
                 $customer = $order['customer']         ?? [];
                 $billing  = $order['billing_address']  ?? [];
                 $shipping = $order['shipping_address'] ?? [];
-
-                $nom   = $this->extractNom($customer, $billing, $shipping);
-                $tiers = $this->syncCustomerToTiers($customer, $billing, $shipping, 'shopify');
+                $nom      = $this->extractNom($customer, $billing, $shipping);
+                $tiers    = $this->syncCustomerToTiers($customer, $billing, $shipping, 'shopify', $tenant);
 
                 $commande = new Commande();
                 $commande->setDate(new \DateTime($order['created_at'] ?? 'now'));
@@ -203,12 +177,14 @@ class ShopifyService
                 $commande->setModePaiement($order['payment_gateway'] ?? '');
                 $commande->setConfirmation('Confirmée');
                 $commande->setLivraison('En attente');
-                $commande->setFraisLivraison((float)($order['total_shipping_price_set']['shop_money']['amount'] ?? 0));
+                $commande->setFraisLivraison(
+                    (float)($order['total_shipping_price_set']['shop_money']['amount'] ?? 0)
+                );
                 $commande->setCreatedAt(new \DateTimeImmutable());
                 $commande->setCommentaire('Importé depuis Shopify' . (!empty($order['note']) ? ' — ' . $order['note'] : ''));
                 $commande->setAgent('');
                 $commande->setWhatsap('');
-
+                $commande->setTenant($tenant);
                 if ($tiers) $commande->setTiers($tiers);
 
                 $this->em->persist($commande);
@@ -224,12 +200,19 @@ class ShopifyService
         $config->setLastSync(new \DateTimeImmutable());
         $this->em->flush();
 
-        return ['success' => true, 'newOrders' => $newOrders, 'errors' => $errors,
-                'message' => $newOrders . ' nouvelle(s) commande(s) importée(s)'];
+        return [
+            'success'   => true,
+            'newOrders' => $newOrders,
+            'updOrders' => $updOrders,
+            'errors'    => $errors,
+            'message'   => $newOrders . ' nouvelle(s) commande(s), ' . $updOrders . ' mise(s) à jour'
+        ];
     }
 
     public function syncCustomers(EcommerceConfig $config): array
     {
+        $this->referentCounter = 0; // ✅ Reset
+        $tenant       = $config->getTenant();
         $shopUrl      = rtrim($config->getShopUrl(), '/');
         $accessToken  = $config->getApiKey();
         $newCustomers = 0;
@@ -251,9 +234,7 @@ class ShopifyService
                 $shopifyId      = (int)($customer['id'] ?? 0);
                 $defaultAddress = $customer['default_address'] ?? [];
 
-                // Anti-doublon par ID Shopify (plus fiable que l'email qui peut être absent)
-                $existingTiers = $this->findExistingTiersByShopifyId($shopifyId);
-                if ($existingTiers) continue;
+                if ($shopifyId && $this->findExistingTiersByShopifyId($shopifyId, $tenant)) continue;
 
                 $billing = [
                     'email'      => $customer['email']      ?? null,
@@ -268,7 +249,7 @@ class ShopifyService
                     'country'    => $defaultAddress['country']    ?? null,
                 ];
 
-                $tiers = $this->syncCustomerToTiers($customer, $billing, [], 'shopify');
+                $tiers = $this->syncCustomerToTiers($customer, $billing, [], 'shopify', $tenant);
                 if ($tiers) $newCustomers++;
 
             } catch (\Exception $e) {
@@ -284,39 +265,38 @@ class ShopifyService
     }
 
     private function syncCustomerToTiers(
-        array  $customer,
-        array  $billing,
-        array  $shipping,
-        string $source
+        array   $customer,
+        array   $billing,
+        array   $shipping,
+        string  $source,
+        ?Tenant $tenant
     ): ?Tiers {
         $shopifyId = (int)($customer['id'] ?? 0);
         $email     = $customer['email'] ?? $billing['email'] ?? null;
         $nom       = $this->extractNom($customer, $billing, $shipping);
 
-        // Anti-doublon 1 : par ID Shopify (nomAlternatif = 'SH-XXXXX')
         if ($shopifyId) {
-            $existing = $this->findExistingTiersByShopifyId($shopifyId);
+            $existing = $this->findExistingTiersByShopifyId($shopifyId, $tenant);
             if ($existing) return $existing;
         }
 
-        // Anti-doublon 2 : par email si disponible
         if ($email) {
-            $existing = $this->tiersRepo->findOneBy(['email' => $email]);
+            $existing = $this->tiersRepo->findOneBy(['email' => $email, 'tenant' => $tenant]);
             if ($existing) return $existing;
 
             $contacts = $this->contactRepo->findBy(['email' => $email]);
             foreach ($contacts as $contact) {
                 $t = $contact->getTiers();
-                if ($t && $this->tiersRepo->find($t->getId())) return $t;
-                $this->em->remove($contact);
+                if ($t && $t->getTenant() && $tenant &&
+                    $t->getTenant()->getId() === $tenant->getId()) {
+                    return $t;
+                }
             }
-            if (count($contacts) > 0) $this->em->flush();
         }
 
         $tiers = new Tiers();
         $tiers->setNom($nom);
         $tiers->setEmail($email);
-        // Stocker l'ID Shopify dans nomAlternatif pour anti-doublon futur
         $tiers->setNomAlternatif($shopifyId ? 'SH-' . $shopifyId : null);
         $tiers->setTelephone($customer['phone'] ?? $billing['phone'] ?? null);
         $tiers->setAdresse(
@@ -330,11 +310,10 @@ class ShopifyService
         $tiers->setEtat('Actif');
         $tiers->setSource($source);
         $tiers->setReferent($this->generateReferent());
+        $tiers->setTenant($tenant);
 
         $this->em->persist($tiers);
-        $this->em->flush();
 
-        // Contact
         $parts     = explode(' ', $nom, 2);
         $firstName = $customer['first_name'] ?? $billing['first_name'] ?? ($parts[0] ?? $nom);
         $lastName  = $customer['last_name']  ?? $billing['last_name']  ?? ($parts[1] ?? '');
@@ -348,24 +327,28 @@ class ShopifyService
         $contact->setVisibilite($source);
         $contact->setTiers($tiers);
         $this->em->persist($contact);
-        $this->em->flush();
 
         return $tiers;
     }
 
     private function generateReferent(): string
     {
-        $conn = $this->em->getConnection();
-        $last = $conn->fetchOne("SELECT referent FROM tiers WHERE referent LIKE 'TI%' ORDER BY id DESC LIMIT 1");
-        $num  = ($last && preg_match('/^TI(\d+)$/', $last, $m)) ? (int)$m[1] + 1 : 1;
-        $ref  = 'TI' . str_pad($num, 5, '0', STR_PAD_LEFT);
-        while ($this->tiersRepo->findOneBy(['referent' => $ref]))
-            $ref = 'TI' . str_pad(++$num, 5, '0', STR_PAD_LEFT);
-        return $ref;
+        if ($this->referentCounter === 0) {
+            $last = $this->em->getConnection()->fetchOne(
+                "SELECT referent FROM tiers WHERE referent LIKE 'TI%'
+                 ORDER BY LENGTH(referent) DESC, referent DESC LIMIT 1"
+            );
+            $this->referentCounter = ($last && preg_match('/^TI(\d+)$/', $last, $m))
+                ? (int)$m[1] : 0;
+        }
+        $this->referentCounter++;
+        return 'TI' . str_pad($this->referentCounter, 5, '0', STR_PAD_LEFT);
     }
 
     public function syncRetours(EcommerceConfig $config): array
     {
+        $this->referentCounter = 0;
+        $tenant      = $config->getTenant();
         $shopUrl     = rtrim($config->getShopUrl(), '/');
         $accessToken = $config->getApiKey();
         $newRetours  = 0;
@@ -391,52 +374,38 @@ class ShopifyService
                 try {
                     $ref      = 'SH-REFUND-' . $refund['id'];
                     $existing = $this->em->getRepository(\App\Entity\Retour::class)
-                                         ->findOneBy(['ref' => $ref]);
+                                         ->findOneBy(['ref' => $ref, 'tenant' => $tenant]);
                     if ($existing) continue;
 
                     $refCommande = 'SH-' . $order['id'];
-                    $commande    = $this->commandeRepo->findOneBy(['ref' => $refCommande]);
+                    $commande    = $this->commandeRepo->findOneBy(['ref' => $refCommande, 'tenant' => $tenant]);
                     $tiers       = null;
 
                     $shopifyCustomerId = (int)($customer['id'] ?? 0);
                     if ($shopifyCustomerId)
-                        $tiers = $this->findExistingTiersByShopifyId($shopifyCustomerId);
+                        $tiers = $this->findExistingTiersByShopifyId($shopifyCustomerId, $tenant);
                     if (!$tiers && $email)
-                        $tiers = $this->tiersRepo->findOneBy(['email' => $email]);
+                        $tiers = $this->tiersRepo->findOneBy(['email' => $email, 'tenant' => $tenant]);
 
-                    $montant = 0;
-                    foreach ($refund['transactions'] ?? [] as $transaction) {
+                    $montant = 0.0;
+                    foreach ($refund['transactions'] ?? [] as $transaction)
                         $montant += abs((float)($transaction['amount'] ?? 0));
-                    }
                     if ($montant === 0.0) $montant = abs((float)($order['total_price'] ?? 0));
 
-                    $motifs = array_map(
-                        fn($li) => $li['reason'] ?? '',
-                        $refund['refund_line_items'] ?? []
-                    );
-
-                    $nom = $this->extractNom($customer, $billing);
+                    $motifs = array_map(fn($li) => $li['reason'] ?? '', $refund['refund_line_items'] ?? []);
+                    $nom    = $this->extractNom($customer, $billing);
 
                     $retour = new \App\Entity\Retour();
-                    $retour->setRef($ref);
-                    $retour->setSource('shopify');
-                    $retour->setRefCommande($refCommande);
+                    $retour->setRef($ref)->setSource('shopify')->setRefCommande($refCommande);
                     $retour->setDate(new \DateTime($refund['created_at'] ?? 'now'));
-                    $retour->setClient($nom);
-                    $retour->setEmailClient($email);
+                    $retour->setClient($nom)->setEmailClient($email);
                     $retour->setTelephone($customer['phone'] ?? $billing['phone'] ?? null);
                     $retour->setMontantRembourse($montant);
-                    $retour->setMotif(
-                        implode(', ', array_filter($motifs)) ?: 'Remboursement Shopify'
-                    );
+                    $retour->setMotif(implode(', ', array_filter($motifs)) ?: 'Remboursement Shopify');
                     $retour->setStatut('Remboursé');
-                    $retour->setVille($billing['city'] ?? null);
-                    $retour->setPays($billing['country'] ?? null);
-                    $retour->setCommentaire(
-                        'Importé depuis Shopify — Note: ' . ($refund['note'] ?? 'aucune')
-                    );
-                    $retour->setCreatedAt(new \DateTimeImmutable());
-
+                    $retour->setVille($billing['city'] ?? null)->setPays($billing['country'] ?? null);
+                    $retour->setCommentaire('Importé depuis Shopify — Note: ' . ($refund['note'] ?? 'aucune'));
+                    $retour->setCreatedAt(new \DateTimeImmutable())->setTenant($tenant);
                     if ($tiers)    $retour->setTiers($tiers);
                     if ($commande) $retour->setCommande($commande);
 

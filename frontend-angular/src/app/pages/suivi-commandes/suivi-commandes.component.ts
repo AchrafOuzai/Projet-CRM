@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
 import { Commande } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 interface DateRow {
   date: string; commandes: number; livrees: number;
@@ -11,7 +12,7 @@ interface DateRow {
 @Component({
   selector: 'app-suivi-commandes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule,NgIconComponent],
   templateUrl: './suivi-commandes.component.html',
   styleUrls: ['./suivi-commandes.component.scss']
 })

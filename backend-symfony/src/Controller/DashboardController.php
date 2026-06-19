@@ -3,58 +3,62 @@
 namespace App\Controller;
 
 use App\Repository\CommandeRepository;
-use App\Repository\ProduitRepository;
-use App\Repository\DepenseRepository;
-use App\Repository\AdsRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 class DashboardController extends AbstractController
 {
     private $commandeRepo;
-    private $produitRepo;
-    private $depenseRepo;
-    private $adsRepo;
 
-    public function __construct(
-        CommandeRepository $commandeRepo,
-        ProduitRepository  $produitRepo,
-        DepenseRepository  $depenseRepo,
-        AdsRepository      $adsRepo
-    ) {
+    public function __construct(CommandeRepository $commandeRepo)
+    {
         $this->commandeRepo = $commandeRepo;
-        $this->produitRepo  = $produitRepo;
-        $this->depenseRepo  = $depenseRepo;
-        $this->adsRepo      = $adsRepo;
     }
 
     #[Route('/api/dashboard/stats', name: 'api_dashboard_stats', methods: ['GET'])]
-    public function stats(): JsonResponse
+    public function stats(Request $request): JsonResponse
     {
-        $commandes = $this->commandeRepo->findAll();
-        $produits  = $this->produitRepo->findAll();
-        $depenses  = $this->depenseRepo->findAll();
+        $user   = $this->getUser();
+        $tenant = ($user && method_exists($user, 'getTenant')) ? $user->getTenant() : null;
 
-        $total      = count($commandes);
-        $confirmees = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Confirmée');
-        $livrees    = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Livrée');
-        $expediees  = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Expédiée');
-        $payees     = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Payée');
-        $retours    = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Retour');
-        $annulees   = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Annulée');
+        if (!$tenant) {
+            return $this->json([
+                'stats'            => $this->emptyStats(),
+                'ventesParMois'    => [],
+                'ventesParProduit' => [],
+                'parVille'         => [],
+                'parSource'        => [],
+            ]);
+        }
 
-        // Statuts confirmation
-        $pasInteresse   = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Pas intéressé');
-        $pasReponse     = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Pas de réponse');
-        $injoignable    = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Injoignable');
-        $fauxNumero     = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Faux numéro');
-        $deuxiemeAppel  = array_filter($commandes, fn($c) => $c->getConfirmation() === '2ème appel');
+        $dateDebut = $request->query->get('dateDebut');
+        $dateFin   = $request->query->get('dateFin');
+        $livraison = $request->query->get('livraison');
 
-        $ca             = array_sum(array_map(fn($c) => (float)$c->getPrixVenteTotal(), $livrees));
-        $totalDepenses  = array_sum(array_map(fn($d) => (float)$d->getMontant(), $depenses));
+        if ($dateDebut || $dateFin || $livraison) {
+            $commandes = $this->commandeRepo->findByTenantWithFilters($tenant, $dateDebut, $dateFin, $livraison);
+        } else {
+            $commandes = $this->commandeRepo->findBy(['tenant' => $tenant]);
+        }
 
-        // Ventes par mois
+        $total         = count($commandes);
+        $confirmees    = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Confirmée');
+        $livrees       = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Livrée');
+        $expediees     = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Expédiée');
+        $payees        = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Payée');
+        $retours       = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Retour');
+        $annulees      = array_filter($commandes, fn($c) => $c->getLivraison()    === 'Annulée');
+        $pasInteresse  = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Pas intéressé');
+        $pasReponse    = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Pas de réponse');
+        $injoignable   = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Injoignable');
+        $fauxNumero    = array_filter($commandes, fn($c) => $c->getConfirmation() === 'Faux numéro');
+        $deuxiemeAppel = array_filter($commandes, fn($c) => $c->getConfirmation() === '2ème appel');
+
+        $ca = array_sum(array_map(fn($c) => (float)$c->getPrixVenteTotal(), $livrees));
+
+        // ── Ventes par mois ──────────────────────────────
         $parMois = [];
         foreach ($commandes as $c) {
             $mois = $c->getDate() ? $c->getDate()->format('n') : 0;
@@ -71,8 +75,9 @@ class DashboardController extends AbstractController
                 $parMois[$mois]['ventesPay'] += (float)$c->getPrixVenteTotal();
             }
         }
+        ksort($parMois);
 
-        // Ventes par produit
+        // ── Ventes par désignation ───────────────────────
         $parProduit = [];
         foreach ($commandes as $c) {
             $key = $c->getDesignation() ?? 'Inconnu';
@@ -86,27 +91,17 @@ class DashboardController extends AbstractController
                 $parProduit[$key]['ventes'] += (float)$c->getPrixVenteTotal();
             }
         }
+        arsort($parProduit);
 
-        // Par ville
+        // ── Par ville ────────────────────────────────────
         $parVille = [];
         foreach ($commandes as $c) {
             $key = $c->getVille() ?? 'Inconnue';
-            $parVille[$key] = ($parVille[$key] ?? 0) + 1;
+            if ($key) $parVille[$key] = ($parVille[$key] ?? 0) + 1;
         }
+        arsort($parVille);
 
-        // Par agent
-        $parAgent = [];
-        foreach ($commandes as $c) {
-            $key = $c->getAgent() ?: 'Sans agent';
-            if (!isset($parAgent[$key])) {
-                $parAgent[$key] = ['total' => 0, 'confirmees' => 0, 'livrees' => 0];
-            }
-            $parAgent[$key]['total']++;
-            if ($c->getConfirmation() === 'Confirmée') $parAgent[$key]['confirmees']++;
-            if ($c->getLivraison()    === 'Livrée')    $parAgent[$key]['livrees']++;
-        }
-
-        // Par source (e-commerce stats)
+        // ── Par source ───────────────────────────────────
         $parSource = [];
         foreach ($commandes as $c) {
             $key = $c->getSource() ?? 'manuel';
@@ -128,18 +123,30 @@ class DashboardController extends AbstractController
                 'fauxNumero'       => count($fauxNumero),
                 'deuxiemeAppel'    => count($deuxiemeAppel),
                 'ca'               => $ca,
-                'totalDepenses'    => $totalDepenses,
-                'benefice'         => $ca - $totalDepenses,
+                'totalDepenses'    => 0,
+                'benefice'         => $ca,
                 'tauxConfirmation' => $total ? round(count($confirmees) / $total * 100) : 0,
                 'tauxLivraison'    => count($confirmees) ? round(count($livrees) / count($confirmees) * 100) : 0,
                 'tauxRetour'       => count($confirmees) ? round(count($retours)  / count($confirmees) * 100) : 0,
-                'stockTotal'       => array_sum(array_map(fn($p) => $p->getStock() ?? 0, $produits)),
+                'stockTotal'       => 0,
             ],
             'ventesParMois'    => $parMois,
             'ventesParProduit' => $parProduit,
             'parVille'         => $parVille,
-            'agents'           => $parAgent,
             'parSource'        => $parSource,
         ]);
+    }
+
+    private function emptyStats(): array
+    {
+        return [
+            'total' => 0, 'confirmees' => 0, 'livrees' => 0, 'expediees' => 0,
+            'payees' => 0, 'retours' => 0, 'annulees' => 0,
+            'pasInteresse' => 0, 'pasReponse' => 0, 'injoignable' => 0,
+            'fauxNumero' => 0, 'deuxiemeAppel' => 0,
+            'ca' => 0, 'totalDepenses' => 0, 'benefice' => 0,
+            'tauxConfirmation' => 0, 'tauxLivraison' => 0,
+            'tauxRetour' => 0, 'stockTotal' => 0,
+        ];
     }
 }

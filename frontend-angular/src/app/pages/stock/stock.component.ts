@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { Produit } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './stock.component.html',
   styleUrls: ['./stock.component.scss']
 })

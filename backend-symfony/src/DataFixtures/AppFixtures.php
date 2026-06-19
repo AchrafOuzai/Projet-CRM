@@ -2,6 +2,28 @@
 
 namespace App\DataFixtures;
 
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+
+class AppFixtures extends Fixture
+{
+    public function load(ObjectManager $manager): void
+    {
+        // AppFixtures désactivé — utiliser SuperAdminFixture uniquement
+        // php bin/console doctrine:fixtures:load --append --group=superadmin
+        echo "ℹ️  AppFixtures vide — aucune donnée insérée.\n";
+    }
+}
+
+
+
+
+
+
+
+
+/*namespace App\DataFixtures;
+
 use App\Entity\User;
 use App\Entity\Produit;
 use App\Entity\Commande;
@@ -121,4 +143,4 @@ class AppFixtures extends Fixture
         $manager->flush();
         echo "✅ Config créée\n";
     }
-}
+}*/

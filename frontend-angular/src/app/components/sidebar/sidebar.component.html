@@ -1,77 +1,147 @@
-<aside class="sidebar" [class.open]="menuOpen">
-  <div class="logo">
-    <h2>⚡ ShopCRM</h2>
-    <span>E-Commerce Manager</span>
+<!-- IMPORTANT : importer NgIconsModule dans sidebar.component.ts -->
+<!-- imports: [..., NgIconComponent] depuis @ng-icons/core -->
+
+<aside class="flex flex-col fixed top-0 left-0 bottom-0 w-[248px] bg-slate-800 z-50 overflow-y-auto overflow-x-hidden shadow-xl transition-transform duration-300">
+
+  <!-- LOGO -->
+  <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-700 shrink-0">
+    <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40 shrink-0">
+      <ng-icon name="heroSquares2x2" class="text-white" size="18"></ng-icon>
+    </div>
+    <div>
+      <h2 class="font-display font-black text-white text-[1rem] leading-tight tracking-tight">ShopCRM</h2>
+      <span class="text-[0.58rem] text-slate-500 uppercase tracking-[2px] mt-0.5 block">MOENN Technologies</span>
+    </div>
   </div>
 
-  <nav style="flex:1">
+  <!-- NAV -->
+  <nav class="flex-1 px-2.5 py-3">
 
-    <!-- Dashboard -->
-    <div class="nav-group">
-      <a class="nav-item"
-         [class.active]="isActive('/dashboard')"
-         (click)="navigate('/dashboard')">
-        <span class="icon">📊</span>
-        Dashboard
+    <div class="text-[0.57rem] font-bold uppercase tracking-[2px] text-slate-500 px-2.5 pt-4 pb-1.5 select-none">Principal</div>
+
+    <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer border border-transparent transition-all duration-150 no-underline"
+       [class.bg-blue-600]="isActive('/dashboard')"
+       [class.text-white]="isActive('/dashboard')"
+       [class.border-blue-500]="isActive('/dashboard')"
+       [class.text-slate-400]="!isActive('/dashboard')"
+       [class.hover:bg-slate-700]="!isActive('/dashboard')"
+       (click)="navigate('/dashboard')">
+      <ng-icon name="heroChartBar" size="18" class="shrink-0"></ng-icon>
+      <span class="text-[0.84rem] font-medium">Dashboard</span>
+    </a>
+
+    <div class="text-[0.57rem] font-bold uppercase tracking-[2px] text-slate-500 px-2.5 pt-4 pb-1.5 select-none">Clients</div>
+
+    <!-- Tiers toggle -->
+    <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer border border-transparent transition-all duration-150 no-underline"
+       [class.bg-blue-600/20]="isActive('/tiers') || isActive('/contacts')"
+       [class.text-blue-300]="isActive('/tiers') || isActive('/contacts')"
+       [class.border-blue-500/30]="isActive('/tiers') || isActive('/contacts')"
+       [class.text-slate-400]="!isActive('/tiers') && !isActive('/contacts')"
+       (click)="toggleTiers()">
+      <ng-icon name="heroBuildingOffice2" size="18" class="shrink-0"></ng-icon>
+      <span class="flex-1 text-[0.84rem] font-medium">Tiers</span>
+      <ng-icon [name]="tiersOpen ? 'heroChevronDown' : 'heroChevronRight'" size="14" class="text-slate-500 transition-transform duration-200"></ng-icon>
+    </a>
+    <div class="submenu border-l border-slate-700 ml-5 pl-1 mb-0.5" [class.open]="tiersOpen">
+      <a class="flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 cursor-pointer text-[0.81rem] transition-all duration-150 no-underline"
+         [class.bg-blue-600/15]="isActive('/tiers')" [class.text-blue-300]="isActive('/tiers')" [class.font-semibold]="isActive('/tiers')"
+         [class.text-slate-500]="!isActive('/tiers')"
+         (click)="navigate('/tiers')">
+        <ng-icon name="heroBuildingOffice2" size="14"></ng-icon> Tiers
+      </a>
+      <a class="flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 cursor-pointer text-[0.81rem] transition-all duration-150 no-underline"
+         [class.bg-blue-600/15]="isActive('/contacts')" [class.text-blue-300]="isActive('/contacts')" [class.font-semibold]="isActive('/contacts')"
+         [class.text-slate-500]="!isActive('/contacts')"
+         (click)="navigate('/contacts')">
+        <ng-icon name="heroUser" size="14"></ng-icon> Contacts
       </a>
     </div>
 
-    <!-- Tiers -->
-    <div class="nav-group">
-      <a class="nav-item"
-         [class.active]="isActive('/tiers') || isActive('/contacts')"
-         (click)="toggleTiers()">
-        <span class="icon">🏢</span>
-        Tiers
-        <span class="arrow" [class.open]="tiersOpen">▶</span>
+    <div class="text-[0.57rem] font-bold uppercase tracking-[2px] text-slate-500 px-2.5 pt-4 pb-1.5 select-none">Ventes</div>
+
+    <!-- Commandes toggle -->
+    <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer border border-transparent transition-all duration-150 no-underline"
+       [class.bg-blue-600/20]="isActive('/commandes') || isActive('/livraison') || isActive('/retours')"
+       [class.text-blue-300]="isActive('/commandes') || isActive('/livraison') || isActive('/retours')"
+       [class.border-blue-500/30]="isActive('/commandes') || isActive('/livraison') || isActive('/retours')"
+       [class.text-slate-400]="!isActive('/commandes') && !isActive('/livraison') && !isActive('/retours')"
+       (click)="toggleCommandes()">
+      <ng-icon name="heroCube" size="18" class="shrink-0"></ng-icon>
+      <span class="flex-1 text-[0.84rem] font-medium">Commandes</span>
+      <ng-icon [name]="commandesOpen ? 'heroChevronDown' : 'heroChevronRight'" size="14" class="text-slate-500 transition-transform duration-200"></ng-icon>
+    </a>
+    <div class="submenu border-l border-slate-700 ml-5 pl-1 mb-0.5" [class.open]="commandesOpen">
+      <a class="flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 cursor-pointer text-[0.81rem] transition-all duration-150 no-underline"
+         [class.bg-blue-600/15]="isActive('/commandes')" [class.text-blue-300]="isActive('/commandes')" [class.font-semibold]="isActive('/commandes')"
+         [class.text-slate-500]="!isActive('/commandes')"
+         (click)="navigate('/commandes')">
+        <ng-icon name="heroCube" size="14"></ng-icon> Commandes
       </a>
-      <div class="submenu" [class.open]="tiersOpen">
-        <a [class.active]="isActive('/tiers')" (click)="navigate('/tiers')">
-          <span class="icon">🏢</span> Tiers
-        </a>
-        <a [class.active]="isActive('/contacts')" (click)="navigate('/contacts')">
-          <span class="icon">👤</span> Contacts
-        </a>
-      </div>
+      <a class="flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 cursor-pointer text-[0.81rem] transition-all duration-150 no-underline"
+         [class.bg-blue-600/15]="isActive('/livraison')" [class.text-blue-300]="isActive('/livraison')" [class.font-semibold]="isActive('/livraison')"
+         [class.text-slate-500]="!isActive('/livraison')"
+         (click)="navigate('/livraison')">
+        <ng-icon name="heroTruck" size="14"></ng-icon> Livraison
+      </a>
+      <a class="flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 cursor-pointer text-[0.81rem] transition-all duration-150 no-underline"
+         [class.bg-blue-600/15]="isActive('/retours')" [class.text-blue-300]="isActive('/retours')" [class.font-semibold]="isActive('/retours')"
+         [class.text-slate-500]="!isActive('/retours')"
+         (click)="navigate('/retours')">
+        <ng-icon name="heroArrowUturnLeft" size="14"></ng-icon> Retours
+      </a>
     </div>
 
-    <!-- Commandes -->
-    <div class="nav-group">
-      <a class="nav-item"
-         [class.active]="isActive('/commandes') || isActive('/livraison') || isActive('/retours')"
-         (click)="toggleCommandes()">
-        <span class="icon">📦</span>
-        Commandes
-        <span class="arrow" [class.open]="commandesOpen">▶</span>
-      </a>
-      <div class="submenu" [class.open]="commandesOpen">
-        <a [class.active]="isActive('/commandes')" (click)="navigate('/commandes')">
-          <span class="icon">📦</span> Commandes
-        </a>
-        <a [class.active]="isActive('/livraison')" (click)="navigate('/livraison')">
-          <span class="icon">🚚</span> Livraison
-        </a>
-        <a [class.active]="isActive('/retours')" (click)="navigate('/retours')">
-          <span class="icon">↩️</span> Retours
-        </a>
-      </div>
-    </div>
+    <div class="text-[0.57rem] font-bold uppercase tracking-[2px] text-slate-500 px-2.5 pt-4 pb-1.5 select-none">E-Commerce</div>
 
-    <!-- E-Commerce -->
-    <div class="nav-group">
-      <a class="nav-item"
-         [class.active]="isActive('/ecommerce')"
-         (click)="navigate('/ecommerce')">
-        <span class="icon">🛒</span>
-        E-Commerce
-      </a>
-    </div>
+    <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer border border-transparent transition-all duration-150 no-underline"
+       [class.bg-blue-600]="isActive('/ecommerce')"
+       [class.text-white]="isActive('/ecommerce')"
+       [class.border-blue-500]="isActive('/ecommerce')"
+       [class.text-slate-400]="!isActive('/ecommerce')"
+       (click)="navigate('/ecommerce')">
+      <ng-icon name="heroGlobeAlt" size="18" class="shrink-0"></ng-icon>
+      <span class="text-[0.84rem] font-medium">E-Commerce</span>
+    </a>
 
   </nav>
 
-  <div style="padding:16px 20px;border-top:1px solid var(--border);margin-top:auto">
-    <button class="btn btn-danger" style="width:100%;justify-content:center" (click)="logout()">
-      🚪 Déconnexion
+  <!-- Section Paramètres (Admin seulement) -->
+<div *ngIf="isAdmin">
+  <div class="text-[0.57rem] font-bold uppercase tracking-[2px] text-slate-500 px-2.5 pt-4 pb-1.5 select-none">
+    Paramètres
+  </div>
+  <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 cursor-pointer border border-transparent transition-all duration-150 no-underline"
+     [class.bg-blue-600]="isActive('/settings/users')"
+     [class.text-white]="isActive('/settings/users')"
+     [class.border-blue-500]="isActive('/settings/users')"
+     [class.text-slate-400]="!isActive('/settings/users')"
+     (click)="navigate('/settings/users')">
+    <ng-icon name="heroUsers" size="18" class="shrink-0"></ng-icon>
+    <span class="text-[0.84rem] font-medium">Agents & Rôles</span>
+  </a>
+</div>
+
+  <!-- FOOTER USER -->
+<div class="shrink-0 px-2.5 pb-4 pt-2 border-t border-slate-700">
+  <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-700 transition-colors duration-150 cursor-default">
+    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center text-white font-display font-bold text-[0.82rem] shrink-0">
+      {{userInitiale}}
+    </div>
+    <div class="flex-1 min-w-0">
+      <span class="block text-[0.82rem] font-semibold text-slate-200 truncate">{{userNom || 'Utilisateur'}}</span>
+      <span class="block text-[0.6rem] uppercase tracking-wide mt-0.5"
+            [class.text-blue-400]="userRole === 'ROLE_ADMIN'"
+            [class.text-amber-400]="userRole === 'ROLE_AGENT'"
+            [class.text-slate-500]="userRole !== 'ROLE_ADMIN' && userRole !== 'ROLE_AGENT'">
+        {{userLabel}}
+      </span>
+    </div>
+    <button class="text-slate-500 hover:text-red-400 hover:bg-red-400/10 p-1.5 rounded-md transition-all duration-150"
+            (click)="logout()" title="Déconnexion">
+      <ng-icon name="heroArrowRightOnRectangle" size="18"></ng-icon>
     </button>
   </div>
+</div>
+
 </aside>

@@ -1,261 +1,303 @@
-<div class="page-header">
-  <h1>🏢 Tiers</h1>
-  <p>{{filtered.length}} tiers affichés sur {{tiers.length}}</p>
+<!-- PAGE HEADER -->
+<div class="flex items-start justify-between flex-wrap gap-3 mb-6">
+  <div>
+    <h1 class="font-display font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
+      <ng-icon name="heroBuildingOffice2" size="24" class="text-blue-600"></ng-icon>
+      Tiers
+    </h1>
+    <p class="text-slate-400 text-sm mt-1">{{filtered.length}} tiers affichés sur {{tiers.length}}</p>
+  </div>
 </div>
 
-<div *ngIf="loading" class="empty-state">
-  <div class="icon">⏳</div>
-  <h3>Chargement des tiers...</h3>
+<div *ngIf="loading" class="flex flex-col items-center justify-center py-16 text-slate-400">
+  <ng-icon name="heroClock" size="40" class="mb-4 opacity-40 animate-spin"></ng-icon>
+  <h3 class="font-display font-bold text-slate-600">Chargement des tiers...</h3>
 </div>
 
 <div *ngIf="!loading">
-  <div class="toolbar">
-    <div class="search-bar" style="flex:1;min-width:200px;margin:0">
-      <span>🔍</span>
-      <input [(ngModel)]="search" (ngModelChange)="applyFilters()"
-             placeholder="Nom, email, tél, ville, référent...">
+  <!-- TOOLBAR -->
+  <div class="flex flex-wrap gap-2 mb-4 items-center">
+    <div class="flex items-center gap-2 bg-white border-[1.5px] border-slate-200 rounded-md px-3 py-2 flex-1 min-w-[220px] focus-within:border-blue-500 focus-within:ring-3 focus-within:ring-blue-100 transition-all">
+      <ng-icon name="heroMagnifyingGlass" size="16" class="text-slate-400 shrink-0"></ng-icon>
+      <input [(ngModel)]="search" (ngModelChange)="applyFilters()" placeholder="Nom, email, tél, ville, référent..."
+             class="flex-1 bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400">
     </div>
-    <select [(ngModel)]="filterType" (ngModelChange)="applyFilters()" class="filter-select">
+
+    <select [(ngModel)]="filterType" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Type (tous)</option>
       <option value="Client">Client</option>
       <option value="Fournisseur">Fournisseur</option>
     </select>
-    <select [(ngModel)]="filterSource" (ngModelChange)="applyFilters()" class="filter-select">
+
+    <select [(ngModel)]="filterSource" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">Source (toutes)</option>
-      <option value="manuel">✏️ Manuel</option>
-      <option value="prestashop">🛒 PrestaShop</option>
-      <option value="woocommerce">🛍️ WooCommerce</option>
+      <option value="manuel">Manuel</option>
+      <option value="prestashop">PrestaShop</option>
+      <option value="woocommerce">WooCommerce</option>
+      <option value="shopify">Shopify</option>
     </select>
-    <select [(ngModel)]="filterEtat" (ngModelChange)="applyFilters()" class="filter-select">
+
+    <select [(ngModel)]="filterEtat" (ngModelChange)="applyFilters()"
+            class="border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm text-slate-600 bg-white outline-none focus:border-blue-500 cursor-pointer">
       <option value="">État (tous)</option>
       <option *ngFor="let e of etats" [value]="e">{{e}}</option>
     </select>
-    <button class="btn btn-primary" (click)="openAdd()">+ Nouveau tiers</button>
+
+    <button (click)="openAdd()"
+            class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-md shadow-btn transition-all hover:-translate-y-0.5 whitespace-nowrap">
+      <ng-icon name="heroPlusCircle" size="16"></ng-icon>
+      Nouveau tiers
+    </button>
+
+    <!-- ✅ Bouton Export CSV -->
+    <button (click)="exportCSV()"
+            class="flex items-center gap-1.5 bg-white hover:bg-slate-50 border-[1.5px] border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 font-semibold text-sm px-4 py-2 rounded-md transition-all whitespace-nowrap">
+      <ng-icon name="heroArrowDownTray" size="16"></ng-icon>
+      Export CSV
+    </button>
   </div>
 
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Référent</th>
-          <th>Source</th>
-          <th>Nom</th>
-          <th>Email</th>
-          <th>Téléphone</th>
-          <th>Ville</th>
-          <th>Pays</th>
-          <th>Adresse</th>
-          <th>Code Postal</th>
-          <th>Type</th>
-          <th>Nature</th>
-          <th>État</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let t of filtered">
-          <td><code style="color:var(--accent)">{{t.referent || '—'}}</code></td>
-          <td>
-            <span class="badge" [class]="getSourceBadge(t.source || 'manuel')">
-              {{getSourceIcon(t.source || 'manuel')}} {{t.source || 'manuel'}}
-            </span>
-          </td>
-          <td><strong>{{t.nom}}</strong></td>
-          <td style="color:var(--text2)">{{t.email || '—'}}</td>
-          <td>{{t.telephone || '—'}}</td>
-          <td>{{t.ville || '—'}}</td>
-          <td>{{t.pays || '—'}}</td>
-          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-              [title]="t.adresse || ''">
-            {{t.adresse || '—'}}
-          </td>
-          <td>{{t.codePostal || '—'}}</td>
-          <td>
-            <span class="badge"
-              [class]="(t.typeTiers||[]).includes('Client') && (t.typeTiers||[]).includes('Fournisseur')
-                ? 'expediee' : (t.typeTiers||[]).includes('Client') ? 'confirmee' : 'livree'">
-              {{getTypeBadge(t.typeTiers)}}
-            </span>
-          </td>
-          <td>{{t.natureTiers || '—'}}</td>
-          <td>
-            <span class="badge" [class]="t.etat === 'Actif' ? 'livree' : 'annulee'">
-              {{t.etat}}
-            </span>
-          </td>
-          <td>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-secondary btn-sm" (click)="openEdit(t)">✏️</button>
-              <button class="btn btn-danger btn-sm" (click)="delete(t.id!)">🗑️</button>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="filtered.length === 0">
-          <td colspan="13">
-            <div class="empty-state">
-              <div class="icon">🏢</div>
-              <h3>Aucun tiers trouvé</h3>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- TABLE -->
+  <div class="bg-white border border-slate-200 rounded-xl shadow-card overflow-hidden">
+    <div class="table-wrapper">
+      <table class="w-full min-w-max border-collapse text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b-2 border-slate-200">
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Référent</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Source</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Nom</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Email</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Téléphone</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Ville</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Pays</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Type</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Nature</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">État</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400 whitespace-nowrap">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of filtered" class="border-b border-slate-100 hover:bg-slate-50 transition-colors duration-100">
+            <td class="px-4 py-3 whitespace-nowrap">
+              <code class="text-blue-600 font-mono text-[0.78rem] bg-blue-50 px-1.5 py-0.5 rounded">{{t.referent || '—'}}</code>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' + getSourceBadge(t.source || 'manuel')">
+                {{getSourceIcon(t.source || 'manuel')}} {{t.source || 'manuel'}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap font-semibold text-slate-900">{{t.nom}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-400 text-[0.82rem]">{{t.email || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{t.telephone || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{t.ville || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-700">{{t.pays || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' +
+                ((t.typeTiers||[]).includes('Client') && (t.typeTiers||[]).includes('Fournisseur')
+                  ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                  : (t.typeTiers||[]).includes('Client')
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200')">
+                {{getTypeBadge(t.typeTiers)}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{t.natureTiers || '—'}}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold border ' +
+                (t.etat === 'Actif' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200')">
+                {{t.etat}}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <div class="flex items-center gap-1.5">
+                <button (click)="openEdit(t)" title="Modifier"
+                        class="p-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-500 rounded-md transition-all">
+                  <ng-icon name="heroPencil" size="14"></ng-icon>
+                </button>
+                <button (click)="delete(t.id!)" title="Supprimer"
+                        class="p-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-500 rounded-md transition-all">
+                  <ng-icon name="heroTrash" size="14"></ng-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="11" class="py-16 text-center">
+              <ng-icon name="heroBuildingOffice2" size="40" class="mx-auto mb-4 text-slate-300 block"></ng-icon>
+              <p class="font-display font-bold text-slate-500">Aucun tiers trouvé</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <!-- MODAL TIERS -->
-<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
-  <div class="modal modal-large" (click)="$event.stopPropagation()">
-    <h3>{{editMode ? '✏️ Modifier' : '➕ Nouveau'}} tiers</h3>
+<div *ngIf="showModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" (click)="closeModal()">
+  <div class="bg-white rounded-2xl shadow-card-lg w-full max-w-2xl max-h-[92vh] overflow-y-auto p-7" (click)="$event.stopPropagation()">
+    <h3 class="font-display font-black text-lg text-slate-900 mb-5 pb-4 border-b border-slate-100 flex items-center gap-2">
+      <ng-icon [name]="editMode ? 'heroPencil' : 'heroPlusCircle'" size="20" class="text-blue-600"></ng-icon>
+      {{editMode ? 'Modifier' : 'Nouveau'}} tiers
+    </h3>
 
-    <div class="form-group">
-      <label>Type du tiers *</label>
-      <div style="display:flex;gap:24px;margin-top:8px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" [checked]="isTypeChecked('Client')" (change)="toggleType('Client')">
-          <span>🧑 Client</span>
+    <!-- Type -->
+    <div class="mb-4">
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Type du tiers *</label>
+      <div class="flex gap-6">
+        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+          <input type="checkbox" [checked]="isTypeChecked('Client')" (change)="toggleType('Client')" class="w-4 h-4 accent-blue-600">
+          <ng-icon name="heroUser" size="14" class="text-slate-500"></ng-icon> Client
         </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" [checked]="isTypeChecked('Fournisseur')" (change)="toggleType('Fournisseur')">
-          <span>🏭 Fournisseur</span>
+        <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+          <input type="checkbox" [checked]="isTypeChecked('Fournisseur')" (change)="toggleType('Fournisseur')" class="w-4 h-4 accent-blue-600">
+          <ng-icon name="heroBuildingOffice2" size="14" class="text-slate-500"></ng-icon> Fournisseur
         </label>
       </div>
-      <span class="error" *ngIf="errors['typeTiers']">{{errors['typeTiers']}}</span>
+      <span *ngIf="errors['typeTiers']" class="text-red-500 text-xs mt-1 block">{{errors['typeTiers']}}</span>
     </div>
 
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Nom *</label>
-        <input type="text" [(ngModel)]="form.nom" [class.input-error]="errors['nom']"
-               placeholder="Nom du tiers">
-        <span class="error" *ngIf="errors['nom']">{{errors['nom']}}</span>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nom *</label>
+        <input type="text" [(ngModel)]="form.nom" [class.border-red-400]="errors['nom']" placeholder="Nom du tiers"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['nom']" class="text-red-500 text-xs mt-1 block">{{errors['nom']}}</span>
       </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" [(ngModel)]="form.email" placeholder="email@exemple.com">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Email</label>
+        <input type="email" [(ngModel)]="form.email" placeholder="email@exemple.com"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
 
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Téléphone</label>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Téléphone</label>
         <input type="text" [(ngModel)]="form.telephone" placeholder="0600000000"
-               [class.input-error]="errors['telephone']">
-        <span class="error" *ngIf="errors['telephone']">{{errors['telephone']}}</span>
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+        <span *ngIf="errors['telephone']" class="text-red-500 text-xs mt-1 block">{{errors['telephone']}}</span>
       </div>
-      <div class="form-group">
-        <label>Ville</label>
-        <input type="text" [(ngModel)]="form.ville" placeholder="Casablanca">
-      </div>
-    </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Adresse</label>
-        <input type="text" [(ngModel)]="form.adresse" placeholder="Rue, numéro...">
-      </div>
-      <div class="form-group">
-        <label>Code Postal</label>
-        <input type="text" [(ngModel)]="form.codePostal" placeholder="20000"
-               [class.input-error]="errors['codePostal']">
-        <span class="error" *ngIf="errors['codePostal']">{{errors['codePostal']}}</span>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Ville</label>
+        <input type="text" [(ngModel)]="form.ville" placeholder="Casablanca"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
     </div>
 
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Pays</label>
-        <input type="text" [(ngModel)]="form.pays" placeholder="Maroc">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Adresse</label>
+        <input type="text" [(ngModel)]="form.adresse" placeholder="Rue, numéro..."
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
       </div>
-      <div class="form-group">
-        <label>Nature</label>
-        <select [(ngModel)]="form.natureTiers">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Pays</label>
+        <input type="text" [(ngModel)]="form.pays" placeholder="Maroc"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nature</label>
+        <select [(ngModel)]="form.natureTiers" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option value="">— Sélectionner —</option>
           <option *ngFor="let n of natures" [value]="n">{{n}}</option>
         </select>
       </div>
-    </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>État</label>
-        <select [(ngModel)]="form.etat">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">État</label>
+        <select [(ngModel)]="form.etat" class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
           <option *ngFor="let e of etats" [value]="e">{{e}}</option>
         </select>
-      </div>
-      <div class="form-group">
-        <label>Source</label>
-        <select [(ngModel)]="form.source">
-          <option *ngFor="let s of sources" [value]="s">{{s}}</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row cols-2">
-      <div class="form-group">
-        <label>Nom Alternatif</label>
-        <input type="text" [(ngModel)]="form.nomAlternatif">
-      </div>
-      <div class="form-group">
-        <label>Code Client</label>
-        <input type="text" [(ngModel)]="form.codeClient">
       </div>
     </div>
 
     <!-- Contacts -->
-    <div class="contacts-section">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h4>👤 Contacts ({{contacts.length}})</h4>
-        <button class="btn btn-secondary btn-sm" (click)="openContactForm()">+ Ajouter</button>
+    <div class="mt-5 pt-4 border-t border-slate-100">
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="font-display font-bold text-slate-700 text-sm flex items-center gap-1.5">
+          <ng-icon name="heroUser" size="16" class="text-slate-400"></ng-icon>
+          Contacts ({{contacts.length}})
+        </h4>
+        <button (click)="openContactForm()"
+                class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 rounded-md transition-all">
+          <ng-icon name="heroPlusCircle" size="13"></ng-icon> Ajouter
+        </button>
       </div>
-      <div *ngIf="contacts.length > 0" class="contacts-list">
-        <div class="contact-item" *ngFor="let c of contacts; let i = index">
-          <div class="contact-info">
-            <strong>{{c.nom}} {{c.prenom}}</strong>
+
+      <div *ngIf="contacts.length > 0" class="flex flex-col gap-2 mb-3">
+        <div *ngFor="let c of contacts; let i = index"
+             class="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-200 hover:bg-blue-50 transition-all">
+          <div class="flex gap-4 items-center text-sm text-slate-500">
+            <strong class="text-slate-800">{{c.nom}} {{c.prenom}}</strong>
             <span>{{c.telephone || c.telPortable || '—'}}</span>
             <span>{{c.email || '—'}}</span>
           </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-secondary btn-sm" (click)="editContact(i)">✏️</button>
-            <button class="btn btn-danger btn-sm" (click)="removeContact(i)">🗑️</button>
+          <div class="flex gap-1.5">
+            <button (click)="editContact(i)"
+                    class="p-1.5 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-500 rounded-md transition-all">
+              <ng-icon name="heroPencil" size="13"></ng-icon>
+            </button>
+            <button (click)="removeContact(i)"
+                    class="p-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-500 rounded-md transition-all">
+              <ng-icon name="heroTrash" size="13"></ng-icon>
+            </button>
           </div>
         </div>
       </div>
-      <p *ngIf="contacts.length === 0" style="color:var(--text2);font-size:0.9rem">
-        Aucun contact ajouté
-      </p>
-      <div *ngIf="showContactForm" class="contact-form-inline">
-        <h5>{{editContactMode ? 'Modifier' : 'Nouveau'}} contact</h5>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label>Nom *</label>
-            <input type="text" [(ngModel)]="contactForm.nom">
+
+      <p *ngIf="contacts.length === 0" class="text-slate-400 text-sm">Aucun contact ajouté</p>
+
+      <div *ngIf="showContactForm" class="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-3">
+        <h5 class="font-display font-bold text-slate-700 text-sm mb-3">{{editContactMode ? 'Modifier' : 'Nouveau'}} contact</h5>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Nom *</label>
+            <input type="text" [(ngModel)]="contactForm.nom"
+                   class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
           </div>
-          <div class="form-group">
-            <label>Prénom</label>
-            <input type="text" [(ngModel)]="contactForm.prenom">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Prénom</label>
+            <input type="text" [(ngModel)]="contactForm.prenom"
+                   class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Téléphone</label>
+            <input type="text" [(ngModel)]="contactForm.telephone"
+                   class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Email</label>
+            <input type="email" [(ngModel)]="contactForm.email"
+                   class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500">
           </div>
         </div>
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input type="text" [(ngModel)]="contactForm.telephone">
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" [(ngModel)]="contactForm.email">
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-primary btn-sm" (click)="saveContact()">✅ Confirmer</button>
-          <button class="btn btn-secondary btn-sm" (click)="showContactForm = false">Annuler</button>
+        <div class="flex gap-2">
+          <button (click)="saveContact()"
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all">
+            <ng-icon name="heroCheckCircle" size="13"></ng-icon> Confirmer
+          </button>
+          <button (click)="showContactForm = false"
+                  class="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-md hover:border-slate-300 transition-all">
+            Annuler
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="modal-footer">
-      <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
-      <button class="btn btn-primary" (click)="save()">💾 Enregistrer</button>
+    <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">
+      <button (click)="closeModal()"
+              class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-md hover:border-slate-300 transition-all">
+        Annuler
+      </button>
+      <button (click)="save()"
+              class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-btn transition-all">
+        <ng-icon name="heroArchiveBoxArrowDown" size="16"></ng-icon> Enregistrer
+      </button>
     </div>
   </div>
 </div>

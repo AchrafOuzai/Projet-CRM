@@ -18,22 +18,51 @@ class ContactController extends AbstractController
     private $repo;
     private $tiersRepo;
 
-    public function __construct(EntityManagerInterface $em, ContactRepository $repo, TiersRepository $tiersRepo)
-    {
+    public function __construct(
+        EntityManagerInterface $em,
+        ContactRepository $repo,
+        TiersRepository $tiersRepo
+    ) {
         $this->em        = $em;
         $this->repo      = $repo;
         $this->tiersRepo = $tiersRepo;
     }
 
+    private function getCurrentTenant()
+    {
+        $user = $this->getUser();
+        if (!$user || !method_exists($user, 'getTenant')) return null;
+        return $user->getTenant();
+    }
+
     #[Route('/api/contacts', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        $tenant  = $this->getCurrentTenant();
         $tiersId = $request->query->get('tiersId');
+
         if ($tiersId) {
+            // Vérifier que le tiers appartient au tenant courant
             $tiers = $this->tiersRepo->find($tiersId);
-            $items = $tiers ? $this->repo->findBy(['tiers' => $tiers]) : [];
+            if (!$tiers) return $this->json([]);
+            if ($tenant && $tiers->getTenant() && $tiers->getTenant()->getId() !== $tenant->getId()) {
+                return $this->json(['error' => 'Accès refusé'], 403);
+            }
+            $items = $this->repo->findBy(['tiers' => $tiers]);
         } else {
-            $items = $this->repo->findAll();
+            // Récupérer tous les contacts des tiers du tenant courant
+            if ($tenant) {
+                $qb = $this->em->createQueryBuilder()
+                    ->select('c')
+                    ->from(Contact::class, 'c')
+                    ->join('c.tiers', 't')
+                    ->where('t.tenant = :tenant')
+                    ->setParameter('tenant', $tenant)
+                    ->orderBy('c.id', 'DESC');
+                $items = $qb->getQuery()->getResult();
+            } else {
+                $items = $this->repo->findAll();
+            }
         }
 
         $result = [];
@@ -41,12 +70,10 @@ class ContactController extends AbstractController
             try {
                 $result[] = $this->serialize($c);
             } catch (EntityNotFoundException $e) {
-                // Contact avec tiers supprimé — on le supprime aussi
                 $this->em->remove($c);
             }
         }
         $this->em->flush();
-
         return $this->json($result);
     }
 
@@ -100,9 +127,7 @@ class ContactController extends AbstractController
 
     private function serialize(Contact $c): array
     {
-        $tiersId  = null;
-        $tiersNom = null;
-
+        $tiersId = $tiersNom = null;
         try {
             $tiers = $c->getTiers();
             if ($tiers) {
@@ -112,7 +137,6 @@ class ContactController extends AbstractController
         } catch (EntityNotFoundException $e) {
             throw $e;
         }
-
         return [
             'id'            => $c->getId(),
             'nom'           => $c->getNom(),

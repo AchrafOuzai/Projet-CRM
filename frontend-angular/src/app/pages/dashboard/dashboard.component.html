@@ -1,37 +1,52 @@
-<div class="page-header">
-  <h1>📊 Dashboard</h1>
-  <p>Indicateurs de performance et analyses</p>
+<!-- PAGE HEADER -->
+<div class="flex items-start justify-between flex-wrap gap-3 mb-6">
+  <div>
+    <h1 class="font-display font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
+      <ng-icon name="heroChartBar" size="24" class="text-blue-600"></ng-icon>
+      Dashboard
+    </h1>
+    <p class="text-slate-400 text-sm mt-1">Vue d'ensemble de votre activité e-commerce</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <button (click)="resetFilters()"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-200 hover:border-slate-400 text-slate-500 rounded-md transition-all">
+      <ng-icon name="heroXMark" size="16"></ng-icon>
+      Réinitialiser
+    </button>
+    <button (click)="loadDashboard()"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-600 rounded-md transition-all">
+      <ng-icon name="heroArrowPath" size="16"></ng-icon>
+      Actualiser
+    </button>
+  </div>
 </div>
 
-<div *ngIf="loading" class="empty-state">
-  <div class="icon">⏳</div>
-  <h3>Chargement du dashboard...</h3>
+<!-- LOADING -->
+<div *ngIf="loading" class="flex flex-col items-center justify-center py-16 text-slate-400">
+  <ng-icon name="heroClock" size="40" class="mb-4 opacity-40 animate-spin"></ng-icon>
+  <h3 class="font-display font-bold text-slate-600">Chargement du dashboard...</h3>
 </div>
 
 <div *ngIf="!loading">
 
   <!-- FILTRES -->
-  <div class="card" style="margin-bottom:20px">
-    <div class="form-row cols-4">
-      <div class="form-group">
-        <label>Date début</label>
-        <input type="date" [(ngModel)]="filterDateDebut" (ngModelChange)="applyFilters()">
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-5">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date début</label>
+        <input type="date" [(ngModel)]="filterDateDebut" (ngModelChange)="applyFilters()"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
       </div>
-      <div class="form-group">
-        <label>Date fin</label>
-        <input type="date" [(ngModel)]="filterDateFin" (ngModelChange)="applyFilters()">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date fin</label>
+        <input type="date" [(ngModel)]="filterDateFin" (ngModelChange)="applyFilters()"
+               class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
       </div>
-      <div class="form-group">
-        <label>Agent</label>
-        <select [(ngModel)]="filterAgent" (ngModelChange)="applyFilters()">
-          <option value="">Tous</option>
-          <option *ngFor="let a of config.agents" [value]="a">{{a}}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Livraison</label>
-        <select [(ngModel)]="filterLivr" (ngModelChange)="applyFilters()">
-          <option value="">Tous</option>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Statut livraison</label>
+        <select [(ngModel)]="filterLivr" (ngModelChange)="applyFilters()"
+                class="w-full border-[1.5px] border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 bg-white cursor-pointer">
+          <option value="">Tous les statuts</option>
           <option *ngFor="let s of config.statutsLivraison" [value]="s">{{s}}</option>
         </select>
       </div>
@@ -39,213 +54,360 @@
   </div>
 
   <!-- KPIs PRINCIPAUX -->
-  <div class="stats-grid" style="margin-bottom:20px">
-    <div class="stat-card accent">
-      <div class="stat-label">Total commandes</div>
-      <div class="stat-value">{{stats.total || 0}}</div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-blue-600 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroCube" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Total commandes</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.total || 0}}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">depuis le début</div>
     </div>
-    <div class="stat-card success">
-      <div class="stat-label">CA livré (DH)</div>
-      <div class="stat-value">{{(stats.ca || 0) | number:'1.0-0'}}</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-emerald-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroBanknotes" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">CA livré (DH)</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{formatNumber(stats.ca || 0)}}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">chiffre d'affaires</div>
     </div>
-    <div class="stat-card warning">
-      <div class="stat-label">Dépenses (DH)</div>
-      <div class="stat-value">{{(stats.totalDepenses || 0) | number:'1.0-0'}}</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-blue-600 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroCheckCircle" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Taux confirmation</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.tauxConfirmation || 0}}%</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">{{stats.confirmees || 0}} confirmées</div>
     </div>
-    <div class="stat-card" [class.success]="(stats.benefice||0)>0" [class.danger]="(stats.benefice||0)<0">
-      <div class="stat-label">Bénéfice (DH)</div>
-      <div class="stat-value">{{(stats.benefice || 0) | number:'1.0-0'}}</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-emerald-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroTruck" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Taux livraison</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.tauxLivraison || 0}}%</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">{{stats.livrees || 0}} livrées</div>
     </div>
-    <div class="stat-card accent">
-      <div class="stat-label">Taux confirmation</div>
-      <div class="stat-value">{{stats.tauxConfirmation || 0}}%</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-red-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroArrowUturnLeft" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Taux retour</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.tauxRetour || 0}}%</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">{{stats.retours || 0}} retours</div>
     </div>
-    <div class="stat-card success">
-      <div class="stat-label">Taux livraison</div>
-      <div class="stat-value">{{stats.tauxLivraison || 0}}%</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-amber-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroXCircle" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Annulées</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.annulees || 0}}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">commandes annulées</div>
     </div>
-    <div class="stat-card danger">
-      <div class="stat-label">Taux retour</div>
-      <div class="stat-value">{{stats.tauxRetour || 0}}%</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-sky-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroTruck" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Expédiées</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.expediees || 0}}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">en cours livraison</div>
     </div>
-    <div class="stat-card warning">
-      <div class="stat-label">Stock total</div>
-      <div class="stat-value">{{stats.stockTotal || 0}}</div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden hover:-translate-y-0.5 transition-all before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-violet-500 before:rounded-t-xl">
+      <div class="w-10 h-10 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center mb-3">
+        <ng-icon name="heroBanknotes" size="20"></ng-icon>
+      </div>
+      <div class="text-[0.65rem] text-slate-400 uppercase tracking-wide font-bold mb-1">Payées</div>
+      <div class="font-display font-black text-[1.8rem] text-slate-900 leading-none">{{stats.payees || 0}}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-1.5">commandes payées</div>
     </div>
+
   </div>
 
-  <!-- STATUTS COMMANDES -->
-  <div class="section-title">📦 Statuts des commandes</div>
-  <div class="stats-grid" style="margin-bottom:20px">
-    <div class="stat-card accent">  <div class="stat-label">Total</div>     <div class="stat-value">{{stats.total || 0}}</div></div>
-    <div class="stat-card success"> <div class="stat-label">Livrées</div>   <div class="stat-value">{{stats.livrees || 0}}</div></div>
-    <div class="stat-card warning"> <div class="stat-label">Expédiées</div> <div class="stat-value">{{stats.expediees || 0}}</div></div>
-    <div class="stat-card success"> <div class="stat-label">Payées</div>    <div class="stat-value">{{stats.payees || 0}}</div></div>
-    <div class="stat-card danger">  <div class="stat-label">Retours</div>   <div class="stat-value">{{stats.retours || 0}}</div></div>
-    <div class="stat-card danger">  <div class="stat-label">Annulées</div>  <div class="stat-value">{{stats.annulees || 0}}</div></div>
+  <!-- KPI RINGS SVG -->
+  <div class="flex items-center gap-2 mb-3">
+    <ng-icon name="heroChartBar" size="14" class="text-slate-400"></ng-icon>
+    <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Indicateurs clés</span>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="grid grid-cols-3 gap-4 mb-5">
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center gap-2 hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#2563eb" stroke-width="8"
+                stroke-dasharray="276.46"
+                [attr.stroke-dashoffset]="276.46 - (276.46 * (stats.tauxConfirmation||0) / 100)"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="transition: stroke-dashoffset 1s ease"/>
+        <text x="55" y="50" text-anchor="middle" fill="#2563eb" font-family="Syne,sans-serif" font-size="18" font-weight="800">{{stats.tauxConfirmation || 0}}%</text>
+        <text x="55" y="66" text-anchor="middle" fill="#94a3b8" font-size="9">CONFIRMATION</text>
+      </svg>
+      <div class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[1.5px] text-center">Taux de confirmation</div>
+      <div class="font-display font-black text-slate-900">{{stats.confirmees || 0}} / {{stats.total || 0}}</div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center gap-2 hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#059669" stroke-width="8"
+                stroke-dasharray="276.46"
+                [attr.stroke-dashoffset]="276.46 - (276.46 * (stats.tauxLivraison||0) / 100)"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="transition: stroke-dashoffset 1s ease"/>
+        <text x="55" y="50" text-anchor="middle" fill="#059669" font-family="Syne,sans-serif" font-size="18" font-weight="800">{{stats.tauxLivraison || 0}}%</text>
+        <text x="55" y="66" text-anchor="middle" fill="#94a3b8" font-size="9">LIVRAISON</text>
+      </svg>
+      <div class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[1.5px] text-center">Taux de livraison</div>
+      <div class="font-display font-black text-slate-900">{{stats.livrees || 0}} livrées</div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center gap-2 hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+        <circle cx="55" cy="55" r="44" fill="none" stroke="#dc2626" stroke-width="8"
+                stroke-dasharray="276.46"
+                [attr.stroke-dashoffset]="276.46 - (276.46 * (stats.tauxRetour||0) / 100)"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="transition: stroke-dashoffset 1s ease"/>
+        <text x="55" y="50" text-anchor="middle" fill="#dc2626" font-family="Syne,sans-serif" font-size="18" font-weight="800">{{stats.tauxRetour || 0}}%</text>
+        <text x="55" y="66" text-anchor="middle" fill="#94a3b8" font-size="9">RETOUR</text>
+      </svg>
+      <div class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[1.5px] text-center">Taux de retour</div>
+      <div class="font-display font-black text-slate-900">{{stats.retours || 0}} retours</div>
+    </div>
+
   </div>
 
-  <!-- STATUTS CONFIRMATION -->
-  <div class="section-title">☎️ Statuts de confirmation</div>
-  <div class="stats-grid" style="margin-bottom:20px">
-    <div class="stat-card accent">  <div class="stat-label">Confirmées</div>    <div class="stat-value">{{stats.confirmees || 0}}</div></div>
-    <div class="stat-card danger">  <div class="stat-label">Pas intéressé</div> <div class="stat-value">{{stats.pasInteresse || 0}}</div></div>
-    <div class="stat-card warning"> <div class="stat-label">Pas de réponse</div><div class="stat-value">{{stats.pasReponse || 0}}</div></div>
-    <div class="stat-card warning"> <div class="stat-label">Injoignable</div>   <div class="stat-value">{{stats.injoignable || 0}}</div></div>
-    <div class="stat-card danger">  <div class="stat-label">Faux numéro</div>   <div class="stat-value">{{stats.fauxNumero || 0}}</div></div>
-    <div class="stat-card accent">  <div class="stat-label">2ème appel</div>    <div class="stat-value">{{stats.deuxiemeAppel || 0}}</div></div>
+  <!-- RÉPARTITION STATUTS -->
+  <div class="flex items-center gap-2 mb-3">
+    <ng-icon name="heroCube" size="14" class="text-slate-400"></ng-icon>
+    <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Répartition des statuts</span>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="grid grid-cols-2 gap-4 mb-5">
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[1.5px] mb-4">Statuts livraison</div>
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let item of [
+          {label:'Livrées',   val: stats.livrees||0,   color:'#059669'},
+          {label:'Expédiées', val: stats.expediees||0, color:'#0284c7'},
+          {label:'Payées',    val: stats.payees||0,    color:'#7c3aed'},
+          {label:'Retours',   val: stats.retours||0,   color:'#dc2626'},
+          {label:'Annulées',  val: stats.annulees||0,  color:'#d97706'}
+        ]" class="flex items-center gap-3">
+          <span class="flex-1 text-sm text-slate-500">{{item.label}}</span>
+          <span class="font-display font-bold text-sm min-w-[28px] text-right" [style.color]="item.color">{{item.val}}</span>
+          <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700"
+                 [style.width.%]="stats.total ? item.val / stats.total * 100 : 0"
+                 [style.background]="item.color"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[1.5px] mb-4">Statuts confirmation</div>
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let item of [
+          {label:'Confirmées',     val: stats.confirmees||0,    color:'#2563eb'},
+          {label:'Pas intéressé',  val: stats.pasInteresse||0,  color:'#dc2626'},
+          {label:'Pas de réponse', val: stats.pasReponse||0,    color:'#d97706'},
+          {label:'Injoignable',    val: stats.injoignable||0,   color:'#d97706'},
+          {label:'Faux numéro',    val: stats.fauxNumero||0,    color:'#dc2626'},
+          {label:'2ème appel',     val: stats.deuxiemeAppel||0, color:'#0284c7'}
+        ]" class="flex items-center gap-3">
+          <span class="flex-1 text-sm text-slate-500">{{item.label}}</span>
+          <span class="font-display font-bold text-sm min-w-[28px] text-right" [style.color]="item.color">{{item.val}}</span>
+          <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700"
+                 [style.width.%]="stats.total ? item.val / stats.total * 100 : 0"
+                 [style.background]="item.color"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- KPIs BARRES -->
-  <div class="grid-3" style="margin-bottom:20px">
-    <div class="card">
-      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de confirmation</div>
-      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--accent)">{{stats.tauxConfirmation || 0}}%</div>
-      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill accent" [style.width.%]="stats.tauxConfirmation || 0"></div></div>
+  <!-- SOURCES E-COMMERCE -->
+  <div class="flex items-center gap-2 mb-3">
+    <ng-icon name="heroGlobeAlt" size="14" class="text-slate-400"></ng-icon>
+    <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Répartition par source</span>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm mb-5">
+    <div *ngIf="objectKeys(parSource).length > 0; else noSourceData">
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let s of objectKeys(parSource)" class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full shrink-0" [style.background]="getSourceColor(s)"></span>
+          <span class="flex-1 text-sm text-slate-600 font-medium">{{getSourceLabel(s)}}</span>
+          <span class="font-display font-bold text-sm" [style.color]="getSourceColor(s)">{{parSource[s]}}</span>
+          <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700"
+                 [style.width.%]="getTotalSource() ? parSource[s] / getTotalSource() * 100 : 0"
+                 [style.background]="getSourceColor(s)"></div>
+          </div>
+          <span class="text-xs text-slate-400 w-10 text-right">
+            {{getTotalSource() ? (parSource[s] / getTotalSource() * 100 | number:'1.0-0') : 0}}%
+          </span>
+        </div>
+      </div>
     </div>
-    <div class="card">
-      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de livraison</div>
-      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--success)">{{stats.tauxLivraison || 0}}%</div>
-      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill success" [style.width.%]="stats.tauxLivraison || 0"></div></div>
-    </div>
-    <div class="card">
-      <div style="font-size:0.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Taux de retour</div>
-      <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--danger)">{{stats.tauxRetour || 0}}%</div>
-      <div class="progress-bar" style="margin-top:10px"><div class="progress-fill danger" [style.width.%]="stats.tauxRetour || 0"></div></div>
-    </div>
+    <ng-template #noSourceData>
+      <div class="flex flex-col items-center py-6 text-slate-400">
+        <ng-icon name="heroGlobeAlt" size="32" class="mb-2 opacity-30"></ng-icon>
+        <p class="text-sm">Aucune donnée de source</p>
+      </div>
+    </ng-template>
   </div>
 
-  <!-- VENTES PAR MOIS -->
-  <div class="section-title">📅 Ventes par mois</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="table-container">
-      <table>
+  <!-- GRAPHIQUE VENTES PAR MOIS -->
+  <div class="flex items-center gap-2 mb-3">
+    <ng-icon name="heroCalendarDays" size="14" class="text-slate-400"></ng-icon>
+    <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Évolution des ventes par mois</span>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm mb-5">
+    <div *ngIf="getMoisChartData().length > 0; else noMoisData">
+      <div class="overflow-x-auto">
+        <svg [attr.width]="getMoisChartData().length * 70 + 60" height="200" style="display:block;min-width:100%">
+          <line *ngFor="let y of [0,25,50,75,100]"
+                x1="50" [attr.y1]="180 - y * 1.4"
+                [attr.x2]="getMoisChartData().length * 70 + 50" [attr.y2]="180 - y * 1.4"
+                stroke="#f1f5f9" stroke-width="1"/>
+          <g *ngFor="let d of getMoisChartData(); let i = index">
+            <rect [attr.x]="60 + i * 70 - 20" [attr.y]="180 - d.heightCommandes"
+                  width="18" [attr.height]="d.heightCommandes" fill="#bfdbfe" rx="4">
+              <title>{{d.label}} — {{d.commandes}} commandes</title>
+            </rect>
+            <rect [attr.x]="60 + i * 70" [attr.y]="180 - d.heightLivrees"
+                  width="18" [attr.height]="d.heightLivrees" fill="#6ee7b7" rx="4">
+              <title>{{d.label}} — {{d.livrees}} livrées</title>
+            </rect>
+            <text [attr.x]="60 + i * 70 - 1" y="196" text-anchor="middle" fill="#94a3b8" font-size="10">{{d.label}}</text>
+          </g>
+          <rect x="55" y="8" width="10" height="10" fill="#bfdbfe" rx="2"/>
+          <text x="70" y="17" fill="#94a3b8" font-size="10">Commandes</text>
+          <rect x="140" y="8" width="10" height="10" fill="#6ee7b7" rx="2"/>
+          <text x="155" y="17" fill="#94a3b8" font-size="10">Livrées</text>
+        </svg>
+      </div>
+    </div>
+    <ng-template #noMoisData>
+      <div class="flex flex-col items-center py-8 text-slate-400">
+        <ng-icon name="heroCalendarDays" size="36" class="mb-3 opacity-30"></ng-icon>
+        <p class="font-display font-bold text-slate-500">Aucune donnée mensuelle</p>
+      </div>
+    </ng-template>
+
+    <!-- TABLE MENSUELLE -->
+    <div class="mt-4 border border-slate-200 rounded-xl overflow-hidden">
+      <table class="w-full min-w-max border-collapse text-sm">
         <thead>
-          <tr>
-            <th>Mois</th><th>Commandes</th><th>Livrées</th>
-            <th>CA Livré (DH)</th><th>Payées</th><th>CA Payé (DH)</th><th>Total CA</th>
+          <tr class="bg-slate-50 border-b-2 border-slate-200">
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">Mois</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">Commandes</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">Livrées</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">CA Livré (DH)</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">Payées</th>
+            <th class="px-4 py-3 text-left text-[0.63rem] font-bold uppercase tracking-[1.5px] text-slate-400">CA Payé (DH)</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let m of objectKeys(ventesParMois)">
-            <td><strong>{{moisLabel(m)}}</strong></td>
-            <td>{{ventesParMois[m].commandes || 0}}</td>
-            <td><span class="badge livree">{{ventesParMois[m].livrees || 0}}</span></td>
-            <td style="color:var(--success)">{{(ventesParMois[m].ventes || 0) | number:'1.0-0'}} DH</td>
-            <td><span class="badge payee">{{ventesParMois[m].payees || 0}}</span></td>
-            <td style="color:var(--success)">{{(ventesParMois[m].ventesPay || 0) | number:'1.0-0'}} DH</td>
-            <td style="font-weight:700;color:var(--accent)">
-              {{((ventesParMois[m].ventes || 0) + (ventesParMois[m].ventesPay || 0)) | number:'1.0-0'}} DH
+          <tr *ngFor="let m of objectKeys(ventesParMois)" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 font-semibold text-slate-900">{{moisLabel(m)}}</td>
+            <td class="px-4 py-3 text-slate-700">{{ventesParMois[m].commandes || 0}}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {{ventesParMois[m].livrees || 0}}
+              </span>
             </td>
+            <td class="px-4 py-3 font-semibold text-emerald-600">{{formatNumber(ventesParMois[m].ventes || 0)}} DH</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold bg-violet-50 text-violet-700 border border-violet-200">
+                {{ventesParMois[m].payees || 0}}
+              </span>
+            </td>
+            <td class="px-4 py-3 font-semibold text-violet-600">{{formatNumber(ventesParMois[m].ventesPay || 0)}} DH</td>
           </tr>
           <tr *ngIf="objectKeys(ventesParMois).length === 0">
-            <td colspan="7" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
+            <td colspan="6" class="py-10 text-center text-slate-400">Aucune donnée</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- PERFORMANCE ÉQUIPE -->
-  <div class="section-title">👥 Performance équipe</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr><th>Agent</th><th>Total</th><th>Confirmées</th><th>Taux conf.</th><th>Livrées</th><th>Taux livr.</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let agent of objectKeys(performanceAgents)">
-            <td><strong>{{agent}}</strong></td>
-            <td>{{performanceAgents[agent].total}}</td>
-            <td><span class="badge confirmee">{{performanceAgents[agent].confirmees}}</span></td>
-            <td>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="progress-bar" style="flex:1;min-width:60px">
-                  <div class="progress-fill accent" [style.width.%]="performanceAgents[agent].total ? performanceAgents[agent].confirmees/performanceAgents[agent].total*100 : 0"></div>
-                </div>
-                <span style="color:var(--accent);font-size:0.8rem;font-weight:600;min-width:32px">
-                  {{performanceAgents[agent].total ? (performanceAgents[agent].confirmees/performanceAgents[agent].total*100 | number:'1.0-0') : 0}}%
-                </span>
-              </div>
-            </td>
-            <td><span class="badge livree">{{performanceAgents[agent].livrees}}</span></td>
-            <td>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="progress-bar" style="flex:1;min-width:60px">
-                  <div class="progress-fill success" [style.width.%]="performanceAgents[agent].confirmees ? performanceAgents[agent].livrees/performanceAgents[agent].confirmees*100 : 0"></div>
-                </div>
-                <span style="color:var(--success);font-size:0.8rem;font-weight:600;min-width:32px">
-                  {{performanceAgents[agent].confirmees ? (performanceAgents[agent].livrees/performanceAgents[agent].confirmees*100 | number:'1.0-0') : 0}}%
-                </span>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="objectKeys(performanceAgents).length === 0">
-            <td colspan="6" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- TOP DÉSIGNATIONS + TOP VILLES -->
+  <div class="grid grid-cols-2 gap-4 mb-5">
 
-  <!-- VENTES PAR PRODUIT -->
-  <div class="section-title">📦 Ventes par produit</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr><th>Produit</th><th>Commandes</th><th>Qté</th><th>Livrées</th><th>Taux livr.</th><th>CA (DH)</th><th>Statut</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of objectKeys(ventesParProduit)">
-            <td><strong>{{p}}</strong></td>
-            <td>{{ventesParProduit[p].commandes}}</td>
-            <td>{{ventesParProduit[p].qte}}</td>
-            <td><span class="badge livree">{{ventesParProduit[p].livrees}}</span></td>
-            <td [style.color]="ventesParProduit[p].commandes && (ventesParProduit[p].livrees/ventesParProduit[p].commandes) > 0.5 ? 'var(--success)' : 'var(--warning)'">
-              {{ventesParProduit[p].commandes ? (ventesParProduit[p].livrees/ventesParProduit[p].commandes*100 | number:'1.0-0') : 0}}%
-            </td>
-            <td style="color:var(--success);font-weight:700">{{ventesParProduit[p].ventes | number:'1.0-0'}} DH</td>
-            <td><span class="badge" [class]="ventesParProduit[p].commandes > 10 ? 'livree' : 'expediee'">
-              {{ventesParProduit[p].commandes > 10 ? 'Top' : 'Normal'}}
-            </span></td>
-          </tr>
-          <tr *ngIf="objectKeys(ventesParProduit).length === 0">
-            <td colspan="7" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <ng-icon name="heroTag" size="14" class="text-slate-400"></ng-icon>
+        <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Top désignations</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let p of objectKeys(ventesParProduit) | slice:0:8">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-sm text-slate-700 font-medium flex-1 truncate max-w-[180px]" [title]="p">{{p}}</span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.65rem] font-bold border bg-blue-50 text-blue-700 border-blue-200">
+                {{ventesParProduit[p].commandes}} cmd
+              </span>
+              <span class="text-xs font-bold text-emerald-600 min-w-[70px] text-right">
+                {{formatNumber(ventesParProduit[p].ventes)}} DH
+              </span>
+            </div>
+          </div>
+          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-blue-400 rounded-full transition-all duration-700"
+                 [style.width.%]="getMaxDesignation() ? ventesParProduit[p].commandes / getMaxDesignation() * 100 : 0"></div>
+          </div>
+        </div>
+        <div *ngIf="objectKeys(ventesParProduit).length === 0" class="py-6 text-center text-slate-400 text-sm">
+          Aucune donnée
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- COMMANDES PAR VILLE -->
-  <div class="section-title">🏙️ Commandes par ville</div>
-  <div class="card">
-    <div class="table-container">
-      <table>
-        <thead><tr><th>Ville</th><th>Commandes</th><th>Part</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let v of objectKeys(commandesParVille)">
-            <td><strong>{{v}}</strong></td>
-            <td>{{commandesParVille[v]}}</td>
-            <td>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="progress-bar" style="flex:1;min-width:80px">
-                  <div class="progress-fill accent" [style.width.%]="stats.total ? commandesParVille[v]/stats.total*100 : 0"></div>
-                </div>
-                <span style="font-size:0.8rem;color:var(--accent);min-width:32px">
-                  {{stats.total ? (commandesParVille[v]/stats.total*100 | number:'1.0-0') : 0}}%
-                </span>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="objectKeys(commandesParVille).length === 0">
-            <td colspan="3" style="text-align:center;color:var(--text2);padding:30px">Aucune donnée</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <ng-icon name="heroMapPin" size="14" class="text-slate-400"></ng-icon>
+        <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-[2px]">Top villes</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let v of objectKeys(commandesParVille) | slice:0:8">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-sm text-slate-700 font-medium">{{v}}</span>
+            <div class="flex items-center gap-2">
+              <span class="font-display font-bold text-sm text-blue-600">{{commandesParVille[v]}}</span>
+              <span class="text-xs text-slate-400">
+                {{stats.total ? (commandesParVille[v] / stats.total * 100 | number:'1.0-0') : 0}}%
+              </span>
+            </div>
+          </div>
+          <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-400 rounded-full transition-all duration-700"
+                 [style.width.%]="stats.total ? commandesParVille[v] / stats.total * 100 : 0"></div>
+          </div>
+        </div>
+        <div *ngIf="objectKeys(commandesParVille).length === 0" class="py-6 text-center text-slate-400 text-sm">
+          Aucune donnée
+        </div>
+      </div>
     </div>
+
   </div>
 
 </div>

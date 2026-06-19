@@ -2,11 +2,12 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-accueil',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule,NgIconComponent],
   templateUrl: './accueil.component.html',
   styleUrls: ['./accueil.component.scss']
 })

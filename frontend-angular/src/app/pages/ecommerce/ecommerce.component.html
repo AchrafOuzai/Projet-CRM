@@ -1,158 +1,296 @@
-<div class="page-header">
-  <h1>🛒 Connexions E-Commerce</h1>
-  <p>Synchronisez commandes et clients depuis vos plateformes vers le CRM</p>
+<!-- PAGE HEADER -->
+<div class="flex items-start justify-between flex-wrap gap-3 mb-6">
+  <div>
+    <h1 class="font-display font-black text-2xl text-slate-900 tracking-tight flex items-center gap-2">
+      <ng-icon name="heroGlobeAlt" size="24" class="text-blue-600"></ng-icon>
+      Connexions E-Commerce
+    </h1>
+    <p class="text-slate-400 text-sm mt-1">Synchronisez commandes et clients depuis vos plateformes vers le CRM</p>
+  </div>
 </div>
 
-<div class="ecommerce-container">
-  <div *ngFor="let type of platformTypes" style="margin-bottom:32px">
+<!-- RÉSUMÉ STATUT GLOBAL -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <div *ngFor="let type of platformTypes"
+       class="bg-white border rounded-xl p-4 shadow-sm flex items-center gap-4"
+       [style.border-color]="connectedCount(type) > 0 ? getConfig(type).borderColor : '#e2e8f0'">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+         [style.background]="connectedCount(type) > 0 ? getConfig(type).bgColor : '#f8fafc'">
+      <!-- Logo SVG PrestaShop -->
+      <ng-container *ngIf="type === 'prestashop'">
+        <svg width="22" height="22" viewBox="0 0 50 50" fill="none">
+          <circle cx="25" cy="25" r="25" fill="#DF0067"/>
+          <path d="M15 14h13c5 0 8 3 8 7s-3 7-8 7H19v8h-4V14zm4 10h9c2.5 0 4-1.2 4-3s-1.5-3-4-3h-9v6z" fill="white"/>
+        </svg>
+      </ng-container>
+      <!-- Logo SVG WooCommerce -->
+      <ng-container *ngIf="type === 'woocommerce'">
+        <svg width="22" height="22" viewBox="0 0 50 50" fill="none">
+          <circle cx="25" cy="25" r="25" fill="#7f54b3"/>
+          <path d="M8 15h34a3 3 0 013 3v10a3 3 0 01-3 3H29l-4 4-4-4H8a3 3 0 01-3-3V18a3 3 0 013-3z" fill="white"/>
+          <circle cx="16" cy="25" r="2" fill="#7f54b3"/>
+          <circle cx="25" cy="25" r="2" fill="#7f54b3"/>
+          <circle cx="34" cy="25" r="2" fill="#7f54b3"/>
+        </svg>
+      </ng-container>
+      <!-- Logo SVG Shopify -->
+      <ng-container *ngIf="type === 'shopify'">
+        <svg width="22" height="22" viewBox="0 0 50 50" fill="none">
+          <circle cx="25" cy="25" r="25" fill="#96bf48"/>
+          <path d="M33 13s-0.3-0.2-0.8-0.2c-0.4 0-1.5 0.1-2.5 0.9-0.6-1.8-1.8-3.5-3.8-3.5h-0.2C25 9.5 24.1 9 23.3 9c-5.6 0-8.3 7-9.1 10.5l-3.9 1.2 0.5 1.5 3.1-1c-0.4 2.2-0.4 3.5-0.4 3.5l10.5 3 10-2.8S33 13 33 13zm-10.5-2.2c0.5 0 0.9 0.2 1.2 0.6-1.5 0.7-3 1.8-4.2 3.5 0.8-2.5 2-4.1 3-4.1zm-1 14.2l-7-2c0.7-2.8 2.5-8.5 6-8.5 0.5 0 0.9 0.1 1.3 0.3L22 22.7l-0.5 2.3zm2 0.6l0.5-2.5 5.8-1.8 0.8 3.5-7.1 0.8z" fill="white"/>
+          <path d="M14 25l1 13h20l1-13H14z" fill="white" opacity="0.9"/>
+        </svg>
+      </ng-container>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-bold text-sm text-slate-800">{{getConfig(type).label}}</div>
+      <div class="text-xs mt-0.5">
+        <span *ngIf="connectedCount(type) > 0"
+              class="text-emerald-600 font-semibold flex items-center gap-1">
+          <ng-icon name="heroCheckCircle" size="12"></ng-icon>
+          {{connectedCount(type)}} connexion(s) active(s)
+        </span>
+        <span *ngIf="connectedCount(type) === 0" class="text-slate-400">Non connecté</span>
+      </div>
+    </div>
+    <button (click)="addInstance(type)"
+            class="shrink-0 p-1.5 rounded-lg border border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-400 transition-all"
+            title="Ajouter une connexion">
+      <ng-icon name="heroPlusCircle" size="16"></ng-icon>
+    </button>
+  </div>
+</div>
 
-    <!-- Titre de section par plateforme -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:1.6rem">{{getConfig(type).icon}}</span>
-        <h2 style="font-family:'Syne',sans-serif;font-size:1.1rem;margin:0">
-          {{getConfig(type).label}}
-        </h2>
-        <span style="font-size:0.75rem;color:var(--text2)">
-          ({{instancesOfType(type).length}} connexion(s))
+<!-- SECTIONS PAR PLATEFORME -->
+<div *ngFor="let type of platformTypes" class="mb-8">
+
+  <!-- Section header -->
+  <div class="flex items-center gap-3 mb-3">
+    <div class="h-px flex-1 bg-slate-200"></div>
+    <div class="flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold"
+         [style.background]="getConfig(type).bgColor"
+         [style.border-color]="getConfig(type).borderColor"
+         [style.color]="getConfig(type).color">
+      <ng-icon name="heroGlobeAlt" size="12"></ng-icon>
+      {{getConfig(type).label}}
+    </div>
+    <div class="h-px flex-1 bg-slate-200"></div>
+  </div>
+
+  <!-- Instances -->
+  <div *ngFor="let p of instancesOfType(type); let idx = index"
+       class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 mb-3 transition-all"
+       [class.border-emerald-200]="p.connected"
+       [class.shadow-emerald-50]="p.connected">
+
+    <!-- Header instance -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
+          #{{idx + 1}}
+        </span>
+        <span [class]="'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.68rem] font-bold border ' +
+                       (p.connected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200')">
+          <ng-icon [name]="p.connected ? 'heroCheckCircle' : 'heroXCircle'" size="11"></ng-icon>
+          {{p.connected ? 'Connecté' : 'Non connecté'}}
+        </span>
+        <span *ngIf="p.connected && p.pollingActive"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[0.68rem] font-bold bg-sky-50 text-sky-600 border border-sky-200">
+          <ng-icon name="heroArrowPath" size="11" class="animate-spin"></ng-icon>
+          Sync auto — {{formatCountdown(p)}}
         </span>
       </div>
-      <button class="btn btn-secondary btn-sm" (click)="addInstance(type)">
-        + Ajouter une connexion {{getConfig(type).label}}
+      <button *ngIf="instancesOfType(type).length > 1 || !p.connected"
+              (click)="removeInstance(p)"
+              class="p-1.5 hover:bg-red-50 hover:text-red-500 text-slate-300 rounded-lg transition-all"
+              title="Supprimer">
+        <ng-icon name="heroTrash" size="15"></ng-icon>
       </button>
     </div>
 
-    <!-- Instances de ce type -->
-    <div *ngFor="let p of instancesOfType(type); let idx = index"
-         class="card" style="margin-bottom:14px;position:relative">
-
-      <!-- Badge numéro instance -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:0.72rem;font-weight:700;color:var(--text2);
-                       text-transform:uppercase;letter-spacing:1px;background:var(--bg3);
-                       padding:3px 10px;border-radius:20px">
-            Connexion #{{idx + 1}}
-          </span>
-          <span class="badge" [class.livree]="p.connected" [class.annulee]="!p.connected">
-            {{p.connected ? '● Connecté' : '● Déconnecté'}}
-          </span>
-          <div *ngIf="p.connected && p.pollingActive" style="font-size:0.78rem;color:var(--info)">
-            🔄 Sync dans {{formatCountdown(p)}}
-          </div>
+    <!-- Infos dernière sync -->
+    <div *ngIf="p.connected"
+         class="grid grid-cols-3 gap-3 mb-4 px-4 py-3 bg-slate-50 border border-slate-100 rounded-lg">
+      <div class="text-xs text-slate-500">
+        <div class="flex items-center gap-1.5 mb-1 text-slate-400 font-semibold uppercase tracking-wide text-[0.6rem]">
+          <ng-icon name="heroCube" size="11"></ng-icon> Sync commandes
         </div>
-        <!-- Supprimer instance (sauf si c'est la seule) -->
-        <button *ngIf="instancesOfType(type).length > 1 || !p.connected"
-                class="btn btn-danger btn-sm"
-                (click)="removeInstance(p)"
-                title="Supprimer cette connexion">
-          ✕
-        </button>
+        <span class="font-semibold text-slate-700">{{p.lastSync || 'Jamais'}}</span>
       </div>
-
-      <!-- Infos dernière sync -->
-      <div *ngIf="p.connected" style="display:flex;gap:20px;margin-bottom:14px;
-                                       flex-wrap:wrap;padding:10px;background:var(--bg3);
-                                       border-radius:8px">
-        <div style="font-size:0.78rem;color:var(--text2)">
-          📦 Commandes : <strong style="color:var(--text)">{{p.lastSync || 'Jamais'}}</strong>
+      <div class="text-xs text-slate-500">
+        <div class="flex items-center gap-1.5 mb-1 text-slate-400 font-semibold uppercase tracking-wide text-[0.6rem]">
+          <ng-icon name="heroUsers" size="11"></ng-icon> Sync clients
         </div>
-        <div style="font-size:0.78rem;color:var(--text2)">
-          👤 Clients : <strong style="color:var(--text)">{{p.lastCustomerSync || 'Jamais'}}</strong>
-        </div>
-        <div *ngIf="p.lastOrderId" style="font-size:0.78rem;color:var(--text2)">
-          🔢 Dernière commande : <strong style="color:var(--text)">#{{p.lastOrderId}}</strong>
-        </div>
+        <span class="font-semibold text-slate-700">{{p.lastCustomerSync || 'Jamais'}}</span>
       </div>
+      <div class="text-xs text-slate-500">
+        <div class="flex items-center gap-1.5 mb-1 text-slate-400 font-semibold uppercase tracking-wide text-[0.6rem]">
+          <ng-icon name="heroDocumentText" size="11"></ng-icon> Dernière commande
+        </div>
+        <span class="font-semibold text-slate-700">
+          {{p.lastOrderId ? '#' + p.lastOrderId : 'Aucune'}}
+        </span>
+      </div>
+    </div>
 
-      <!-- Formulaire connexion -->
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label>URL du shop *</label>
+    <!-- Formulaire connexion -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+          URL du shop *
+        </label>
+        <div class="relative">
+          <ng-icon name="heroGlobeAlt" size="15"
+                   class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></ng-icon>
           <input type="text" [(ngModel)]="p.form.url"
-                 [class.input-error]="p.errors['url']"
+                 [class.border-red-400]="p.errors['url']"
                  [placeholder]="getConfig(type).urlPlaceholder"
-                 [disabled]="p.connected">
-          <span class="error" *ngIf="p.errors['url']">{{p.errors['url']}}</span>
+                 [disabled]="p.connected"
+                 class="w-full border-[1.5px] border-slate-200 rounded-md pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
         </div>
-        <div class="form-group">
-          <label>{{getConfig(type).apiKeyLabel}} *</label>
+        <span *ngIf="p.errors['url']" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+          <ng-icon name="heroExclamationCircle" size="11"></ng-icon>
+          {{p.errors['url']}}
+        </span>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+          {{getConfig(type).apiKeyLabel}} *
+        </label>
+        <div class="relative">
+          <ng-icon name="heroKey" size="15"
+                   class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></ng-icon>
           <input [type]="p.connected ? 'password' : 'text'"
                  [(ngModel)]="p.form.apiKey"
-                 [class.input-error]="p.errors['apiKey']"
-                 [placeholder]="p.connected ? '••••••••••••' : getConfig(type).apiKeyPlaceholder"
-                 [disabled]="p.connected">
-          <span class="error" *ngIf="p.errors['apiKey']">{{p.errors['apiKey']}}</span>
-          <small style="color:var(--text2);font-size:0.72rem;margin-top:4px;display:block">
-            {{getConfig(type).apiKeyHelp}}
-          </small>
+                 [class.border-red-400]="p.errors['apiKey']"
+                 [placeholder]="p.connected ? '••••••••••••••••' : getConfig(type).apiKeyPlaceholder"
+                 [disabled]="p.connected"
+                 class="w-full border-[1.5px] border-slate-200 rounded-md pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
+        </div>
+        <span *ngIf="p.errors['apiKey']" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+          <ng-icon name="heroExclamationCircle" size="11"></ng-icon>
+          {{p.errors['apiKey']}}
+        </span>
+        <p class="text-slate-400 text-xs mt-1 flex items-start gap-1">
+          <ng-icon name="heroInformationCircle" size="11" class="shrink-0 mt-0.5"></ng-icon>
+          {{getConfig(type).apiKeyHelp}}
+        </p>
+      </div>
+    </div>
+
+    <!-- Messages erreur / succès -->
+    <div *ngIf="p.errorMessage"
+         class="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-3 text-red-700 text-sm">
+      <ng-icon name="heroExclamationTriangle" size="16" class="shrink-0 mt-0.5"></ng-icon>
+      <span>{{p.errorMessage}}</span>
+    </div>
+    <div *ngIf="p.successMessage"
+         class="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 mb-3 text-emerald-700 text-sm">
+      <ng-icon name="heroCheckCircle" size="16" class="shrink-0 mt-0.5"></ng-icon>
+      <span>{{p.successMessage}}</span>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="flex items-center gap-2 flex-wrap">
+
+      <!-- Connecter -->
+      <button *ngIf="!p.connected" (click)="connect(p)" [disabled]="p.loading"
+              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all">
+        <ng-icon [name]="p.loading ? 'heroArrowPath' : 'heroLink'" size="15"
+                 [class.animate-spin]="p.loading"></ng-icon>
+        {{p.loading ? 'Connexion en cours...' : 'Connecter'}}
+      </button>
+
+      <!-- Déconnecter -->
+      <button *ngIf="p.connected" (click)="disconnect(p)"
+              class="flex items-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 font-semibold text-sm px-3 py-2 rounded-lg transition-all">
+        <ng-icon name="heroXCircle" size="15"></ng-icon>
+        Déconnecter
+      </button>
+
+      <ng-container *ngIf="p.connected">
+
+        <!-- Sync commandes -->
+        <button (click)="syncOrders(p)" [disabled]="p.syncing"
+                class="flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 text-slate-600 font-semibold text-sm px-3 py-2 rounded-lg transition-all">
+          <ng-icon [name]="p.syncing ? 'heroArrowPath' : 'heroArrowDownTray'" size="15"
+                   [class.animate-spin]="p.syncing"></ng-icon>
+          {{p.syncing ? 'Synchronisation...' : 'Sync commandes'}}
+        </button>
+
+        <!-- Sync clients -->
+        <button (click)="syncCustomers(p)" [disabled]="p.syncingCustomers"
+                class="flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50 text-slate-600 font-semibold text-sm px-3 py-2 rounded-lg transition-all">
+          <ng-icon [name]="p.syncingCustomers ? 'heroArrowPath' : 'heroUsers'" size="15"
+                   [class.animate-spin]="p.syncingCustomers"></ng-icon>
+          {{p.syncingCustomers ? 'Synchronisation...' : 'Sync clients'}}
+        </button>
+
+        <!-- Sync auto -->
+        <button *ngIf="!p.pollingActive" (click)="startPolling(p)"
+                class="flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-3 py-2 rounded-lg shadow-sm transition-all">
+          <ng-icon name="heroSignal" size="15"></ng-icon>
+          Sync auto (5 min)
+        </button>
+        <button *ngIf="p.pollingActive" (click)="stopPolling(p)"
+                class="flex items-center gap-2 bg-white border border-sky-200 hover:bg-sky-50 text-sky-600 font-semibold text-sm px-3 py-2 rounded-lg transition-all">
+          <ng-icon name="heroStopCircle" size="15"></ng-icon>
+          Arrêter sync auto
+        </button>
+
+      </ng-container>
+    </div>
+
+    <!-- Résultats sync -->
+    <div *ngIf="p.syncResult || p.syncCustomersResult" class="mt-4 space-y-2">
+
+      <div *ngIf="p.syncResult"
+           class="flex items-start gap-3 px-4 py-3 rounded-lg border text-sm"
+           [class.bg-emerald-50]="p.syncResult.success"
+           [class.border-emerald-200]="p.syncResult.success"
+           [class.bg-red-50]="!p.syncResult.success"
+           [class.border-red-200]="!p.syncResult.success">
+        <ng-icon name="heroCube" size="16"
+                 [class.text-emerald-600]="p.syncResult.success"
+                 [class.text-red-500]="!p.syncResult.success"
+                 class="shrink-0 mt-0.5"></ng-icon>
+        <div class="flex-1">
+          <span class="font-semibold"
+                [class.text-emerald-700]="p.syncResult.success"
+                [class.text-red-700]="!p.syncResult.success">
+            Commandes — {{p.syncResult.message}}
+          </span>
+          <div *ngFor="let e of p.syncResult.errors"
+               class="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <ng-icon name="heroExclamationTriangle" size="11"></ng-icon> {{e}}
+          </div>
         </div>
       </div>
 
-      <!-- Messages -->
-      <div *ngIf="p.errorMessage" style="background:#fee2e2;border:1px solid #fca5a5;
-                                          border-radius:8px;padding:10px 14px;margin-bottom:12px;
-                                          color:#b91c1c;font-size:0.85rem">
-        ⚠️ {{p.errorMessage}}
-      </div>
-      <div *ngIf="p.successMessage" style="background:#dcfce7;border:1px solid #86efac;
-                                            border-radius:8px;padding:10px 14px;margin-bottom:12px;
-                                            color:#15803d;font-size:0.85rem">
-        {{p.successMessage}}
-      </div>
-
-      <!-- Boutons actions -->
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-
-        <button *ngIf="!p.connected" class="btn btn-primary"
-                (click)="connect(p)" [disabled]="p.loading">
-          {{p.loading ? '⏳ Connexion...' : '🔗 Connecter'}}
-        </button>
-
-        <button *ngIf="p.connected" class="btn btn-danger btn-sm" (click)="disconnect(p)">
-          🔌 Déconnecter
-        </button>
-
-        <ng-container *ngIf="p.connected">
-          <button class="btn btn-secondary" (click)="syncOrders(p)" [disabled]="p.syncing">
-            {{p.syncing ? '⏳ Sync...' : '🔄 Sync commandes'}}
-          </button>
-
-          <button class="btn btn-secondary" (click)="syncCustomers(p)" [disabled]="p.syncingCustomers">
-            {{p.syncingCustomers ? '⏳ Sync...' : '👥 Sync clients'}}
-          </button>
-
-          <button *ngIf="!p.pollingActive" class="btn btn-primary" (click)="startPolling(p)">
-            ▶️ Sync auto (5 min)
-          </button>
-          <button *ngIf="p.pollingActive" class="btn btn-danger btn-sm" (click)="stopPolling(p)">
-            ⏹️ Arrêter sync auto
-          </button>
-        </ng-container>
-
-      </div>
-
-      <!-- Résultats -->
-      <div *ngIf="p.syncResult" style="margin-top:12px;padding:12px;background:var(--bg3);
-                                        border-radius:8px;font-size:0.85rem">
-        <strong>📦 Commandes : </strong>
-        <span [style.color]="p.syncResult.success ? 'var(--success)' : 'var(--danger)'">
-          {{p.syncResult.message}}
-        </span>
-        <div *ngFor="let e of p.syncResult.errors"
-             style="color:var(--danger);font-size:0.78rem;margin-top:4px">⚠️ {{e}}</div>
-      </div>
-
-      <div *ngIf="p.syncCustomersResult" style="margin-top:8px;padding:12px;background:var(--bg3);
-                                                  border-radius:8px;font-size:0.85rem">
-        <strong>👥 Clients : </strong>
-        <span [style.color]="p.syncCustomersResult.success ? 'var(--success)' : 'var(--danger)'">
-          {{p.syncCustomersResult.message}}
-        </span>
-        <div *ngFor="let e of p.syncCustomersResult.errors"
-             style="color:var(--danger);font-size:0.78rem;margin-top:4px">⚠️ {{e}}</div>
+      <div *ngIf="p.syncCustomersResult"
+           class="flex items-start gap-3 px-4 py-3 rounded-lg border text-sm"
+           [class.bg-emerald-50]="p.syncCustomersResult.success"
+           [class.border-emerald-200]="p.syncCustomersResult.success"
+           [class.bg-red-50]="!p.syncCustomersResult.success"
+           [class.border-red-200]="!p.syncCustomersResult.success">
+        <ng-icon name="heroUsers" size="16"
+                 [class.text-emerald-600]="p.syncCustomersResult.success"
+                 [class.text-red-500]="!p.syncCustomersResult.success"
+                 class="shrink-0 mt-0.5"></ng-icon>
+        <div class="flex-1">
+          <span class="font-semibold"
+                [class.text-emerald-700]="p.syncCustomersResult.success"
+                [class.text-red-700]="!p.syncCustomersResult.success">
+            Clients — {{p.syncCustomersResult.message}}
+          </span>
+          <div *ngFor="let e of p.syncCustomersResult.errors"
+               class="text-red-500 text-xs mt-1 flex items-center gap-1">
+            <ng-icon name="heroExclamationTriangle" size="11"></ng-icon> {{e}}
+          </div>
+        </div>
       </div>
 
     </div>
+
   </div>
 </div>

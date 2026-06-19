@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { Contact } from '../tiers/tiers.component';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-contacts',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './contacts.component.html',
   styleUrls: ['./contacts.component.scss']
 })

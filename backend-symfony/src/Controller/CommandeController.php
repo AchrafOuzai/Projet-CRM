@@ -24,7 +24,7 @@ class CommandeController extends AbstractController
         EntityManagerInterface $em,
         CommandeRepository $repo,
         TiersRepository $tiersRepo,
-        EmailService $emailService          // ← injecté automatiquement par Symfony
+        EmailService $emailService
     ) {
         $this->em           = $em;
         $this->repo         = $repo;
@@ -32,23 +32,75 @@ class CommandeController extends AbstractController
         $this->emailService = $emailService;
     }
 
+    // ── Helper : tenant courant ──────────────────────────
+    private function getCurrentTenant()
+    {
+        $user = $this->getUser();
+        if (!$user || !method_exists($user, 'getTenant')) return null;
+        return $user->getTenant();
+    }
+
     #[Route('/api/commandes', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        $tenant  = $this->getCurrentTenant();
         $tiersId = $request->query->get('tiersId');
+
+        $qb = $this->em->createQueryBuilder()
+            ->select('c')
+            ->from(Commande::class, 'c')
+            ->orderBy('c.id', 'DESC');
+
+        // ── Filtrage par tenant ──────────────────────────
+        if ($tenant) {
+            $qb->andWhere('c.tenant = :tenant')
+               ->setParameter('tenant', $tenant);
+        }
+
         if ($tiersId) {
             $tiers = $this->tiersRepo->find($tiersId);
-            $items = $tiers ? $this->repo->findBy(['tiers' => $tiers]) : [];
-        } else {
-            $items = $this->repo->findAll();
+            if ($tiers) {
+                $qb->andWhere('c.tiers = :tiers')
+                   ->setParameter('tiers', $tiers);
+            }
         }
+
+        // Filtres optionnels
+        $filters = ['source', 'confirmation', 'livraison', 'agent'];
+        foreach ($filters as $f) {
+            $val = $request->query->get($f);
+            if ($val) {
+                $qb->andWhere("c.$f = :$f")->setParameter($f, $val);
+            }
+        }
+
+        $search = $request->query->get('search');
+        if ($search) {
+            $qb->andWhere(
+                'c.client LIKE :s OR c.designation LIKE :s OR c.telephone LIKE :s
+                 OR c.ref LIKE :s OR c.ville LIKE :s OR c.emailClient LIKE :s'
+            )->setParameter('s', '%' . $search . '%');
+        }
+
+        $items = $qb->getQuery()->getResult();
         return $this->json(array_map(fn($c) => $this->serialize($c), $items));
     }
 
     #[Route('/api/commandes/stats', methods: ['GET'])]
     public function stats(): JsonResponse
     {
-        $all     = $this->repo->findAll();
+        $tenant = $this->getCurrentTenant();
+
+        $qb = $this->em->createQueryBuilder()
+            ->select('c')
+            ->from(Commande::class, 'c');
+
+        if ($tenant) {
+            $qb->where('c.tenant = :tenant')
+               ->setParameter('tenant', $tenant);
+        }
+
+        $all     = $qb->getQuery()->getResult();
         $total   = count($all);
         $ca      = array_sum(array_map(fn($c) => $c->getPrixVenteTotal() ?? 0, $all));
         $conf    = count(array_filter($all, fn($c) => $c->getConfirmation() === 'Confirmée'));
@@ -65,10 +117,12 @@ class CommandeController extends AbstractController
     #[Route('/api/commandes', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $tenant   = $this->getCurrentTenant();
         $data     = json_decode($request->getContent(), true);
         $commande = new Commande();
         $this->hydrate($commande, $data);
         $commande->setCreatedAt(new \DateTimeImmutable());
+        $commande->setTenant($tenant); // ── Assigner le tenant
         $this->em->persist($commande);
         $this->em->flush();
         return $this->json($this->serialize($commande), 201);
@@ -95,19 +149,14 @@ class CommandeController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    // ─── NOUVEAU : envoyer email de confirmation à la demande ───────────────
     #[Route('/api/commandes/{id}/send-email', methods: ['POST'])]
     public function sendEmail(int $id): JsonResponse
     {
         $commande = $this->repo->find($id);
-        if (!$commande) {
-            return $this->json(['error' => 'Commande introuvable'], 404);
-        }
+        if (!$commande) return $this->json(['error' => 'Commande introuvable'], 404);
 
         $email = $commande->getEmailClient();
-        if (!$email) {
-            return $this->json(['error' => 'Cette commande n\'a pas d\'email client'], 400);
-        }
+        if (!$email) return $this->json(['error' => 'Pas d\'email client'], 400);
 
         try {
             $this->emailService->sendOrderConfirmation([
@@ -118,39 +167,35 @@ class CommandeController extends AbstractController
                 'ville'          => $commande->getVille(),
                 'emailClient'    => $email,
             ]);
-
             return $this->json(['success' => true, 'message' => 'Email envoyé à ' . $email]);
-
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Échec envoi email : ' . $e->getMessage()], 500);
+            return $this->json(['error' => 'Échec envoi : ' . $e->getMessage()], 500);
         }
     }
-    // ────────────────────────────────────────────────────────────────────────
 
     private function hydrate(Commande $c, array $data): void
     {
-        if (isset($data['date']))             $c->setDate(new \DateTime($data['date']));
-        if (isset($data['designation']))      $c->setDesignation($data['designation']);
-        if (isset($data['client']))           $c->setClient($data['client']);
-        if (isset($data['telephone']))        $c->setTelephone($data['telephone']);
-        if (isset($data['adresse']))          $c->setAdresse($data['adresse']);
-        if (isset($data['ville']))            $c->setVille($data['ville']);
-        if (isset($data['quantite']))         $c->setQuantite($data['quantite']);
-        if (isset($data['prixVenteTotal']))   $c->setPrixVenteTotal($data['prixVenteTotal']);
-        if (isset($data['typeCde']))          $c->setTypeCde($data['typeCde']);
-        if (isset($data['agent']))            $c->setAgent($data['agent']);
-        if (isset($data['confirmation']))     $c->setConfirmation($data['confirmation']);
-        if (isset($data['livraison']))        $c->setLivraison($data['livraison']);
-        if (isset($data['ref']))              $c->setRef($data['ref']);
-        if (isset($data['commentaire']))      $c->setCommentaire($data['commentaire']);
-        if (isset($data['fraisLivraison']))   $c->setFraisLivraison($data['fraisLivraison']);
-        if (isset($data['whatsap']))          $c->setWhatsap($data['whatsap']);
-        if (isset($data['source']))           $c->setSource($data['source']);
-        if (isset($data['statutEcommerce']))  $c->setStatutEcommerce($data['statutEcommerce']);
-        if (isset($data['modePaiement']))     $c->setModePaiement($data['modePaiement']);
-        if (isset($data['pays']))             $c->setPays($data['pays']);
-        if (isset($data['emailClient']))      $c->setEmailClient($data['emailClient']);
-
+        if (isset($data['date']))            $c->setDate(new \DateTime($data['date']));
+        if (isset($data['designation']))     $c->setDesignation($data['designation']);
+        if (isset($data['client']))          $c->setClient($data['client']);
+        if (isset($data['telephone']))       $c->setTelephone($data['telephone']);
+        if (isset($data['adresse']))         $c->setAdresse($data['adresse']);
+        if (isset($data['ville']))           $c->setVille($data['ville']);
+        if (isset($data['quantite']))        $c->setQuantite($data['quantite']);
+        if (isset($data['prixVenteTotal']))  $c->setPrixVenteTotal($data['prixVenteTotal']);
+        if (isset($data['typeCde']))         $c->setTypeCde($data['typeCde']);
+        if (isset($data['agent']))           $c->setAgent($data['agent']);
+        if (isset($data['confirmation']))    $c->setConfirmation($data['confirmation']);
+        if (isset($data['livraison']))       $c->setLivraison($data['livraison']);
+        if (isset($data['ref']))             $c->setRef($data['ref']);
+        if (isset($data['commentaire']))     $c->setCommentaire($data['commentaire']);
+        if (isset($data['fraisLivraison']))  $c->setFraisLivraison($data['fraisLivraison']);
+        if (isset($data['whatsap']))         $c->setWhatsap($data['whatsap']);
+        if (isset($data['source']))          $c->setSource($data['source']);
+        if (isset($data['statutEcommerce'])) $c->setStatutEcommerce($data['statutEcommerce']);
+        if (isset($data['modePaiement']))    $c->setModePaiement($data['modePaiement']);
+        if (isset($data['pays']))            $c->setPays($data['pays']);
+        if (isset($data['emailClient']))     $c->setEmailClient($data['emailClient']);
         if (isset($data['tiersId'])) {
             $c->setTiers($data['tiersId'] ? $this->tiersRepo->find($data['tiersId']) : null);
         }
@@ -158,13 +203,10 @@ class CommandeController extends AbstractController
 
     public function serialize(Commande $c): array
     {
-        $date     = $c->getDate();
-        $tiersId  = null;
-        $tiersNom = null;
-
+        $tiersId = $tiersNom = null;
         try {
             $tiers = $c->getTiers();
-            if ($tiers !== null) {
+            if ($tiers) {
                 $tiersId  = $tiers->getId();
                 $tiersNom = $tiers->getNom();
             }
@@ -175,7 +217,7 @@ class CommandeController extends AbstractController
 
         return [
             'id'              => $c->getId(),
-            'date'            => $date ? $date->format('Y-m-d') : null,
+            'date'            => $c->getDate() ? $c->getDate()->format('Y-m-d') : null,
             'designation'     => $c->getDesignation(),
             'client'          => $c->getClient(),
             'telephone'       => $c->getTelephone(),

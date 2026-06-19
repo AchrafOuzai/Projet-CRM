@@ -14,7 +14,7 @@ class EcommerceConfig
     private $id;
 
     #[ORM\Column(type: 'string', length: 50)]
-    private $type; // 'prestashop' | 'woocommerce' | 'shopify'
+    private $type;
 
     #[ORM\Column(type: 'string', length: 255)]
     private $shopUrl;
@@ -34,26 +34,35 @@ class EcommerceConfig
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private $lastCustomerSync;
 
-    public function getId()                  { return $this->id; }
+    // isolation par tenant ──────────────────
+    #[ORM\ManyToOne(targetEntity: Tenant::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private $tenant = null;
 
-    public function getType()                { return $this->type; }
-    public function setType($v)              { $this->type = $v; return $this; }
+    public function getId()                 { return $this->id; }
 
-    public function getShopUrl()             { return $this->shopUrl; }
-    public function setShopUrl($v)           { $this->shopUrl = $v; return $this; }
+    public function getType()               { return $this->type; }
+    public function setType($v)             { $this->type = $v; return $this; }
 
-    public function getApiKey()              { return $this->apiKey; }
-    public function setApiKey($v)            { $this->apiKey = $v; return $this; }
+    public function getShopUrl()            { return $this->shopUrl; }
+    public function setShopUrl($v)          { $this->shopUrl = $v; return $this; }
 
-    public function getIsActive()            { return $this->isActive; }
-    public function setIsActive($v)          { $this->isActive = $v; return $this; }
+    public function getApiKey()             { return $this->apiKey; }
+    public function setApiKey($v)           { $this->apiKey = $v; return $this; }
 
-    public function getLastSync()            { return $this->lastSync; }
-    public function setLastSync($v)          { $this->lastSync = $v; return $this; }
+    public function getIsActive()           { return $this->isActive; }
+    public function setIsActive($v)         { $this->isActive = $v; return $this; }
 
-    public function getLastOrderId()         { return $this->lastOrderId; }
-    public function setLastOrderId($v)       { $this->lastOrderId = $v; return $this; }
+    public function getLastSync()           { return $this->lastSync; }
+    public function setLastSync($v)         { $this->lastSync = $v; return $this; }
 
-    public function getLastCustomerSync()    { return $this->lastCustomerSync; }
-    public function setLastCustomerSync($v)  { $this->lastCustomerSync = $v; return $this; }
+    public function getLastOrderId()        { return $this->lastOrderId; }
+    public function setLastOrderId($v)      { $this->lastOrderId = $v; return $this; }
+
+    public function getLastCustomerSync()   { return $this->lastCustomerSync; }
+    public function setLastCustomerSync($v) { $this->lastCustomerSync = $v; return $this; }
+
+    // ── NOUVEAU ──────────────────────────────────────────
+    public function getTenant()             { return $this->tenant; }
+    public function setTenant($v)           { $this->tenant = $v; return $this; }
 }

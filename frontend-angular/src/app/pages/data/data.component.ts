@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { DataConfig } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-data',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './data.component.html',
   styleUrls: ['./data.component.scss']
 })

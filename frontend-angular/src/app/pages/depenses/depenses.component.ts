@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { Depense } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 interface CategorieItem { categorie: string; montant: number; }
 
 @Component({
   selector: 'app-depenses',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './depenses.component.html',
   styleUrls: ['./depenses.component.scss']
 })

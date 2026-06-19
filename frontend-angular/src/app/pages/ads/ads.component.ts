@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { Ads } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-ads',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './ads.component.html',
   styleUrls: ['./ads.component.scss']
 })

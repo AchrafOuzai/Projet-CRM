@@ -191,11 +191,16 @@ sendCommandeEmailObs(id: number): Observable<any> {
   }
 
   // ---- DASHBOARD ----
-  getDashboardStats(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/dashboard/stats`, {
-      headers: this.getHeaders()
-    }).pipe(catchError(err => this.handleError(err)));
-  }
+  getDashboardStats(params: any = {}): Observable<any> {
+  let httpParams = new HttpParams();
+  Object.keys(params).forEach(k => {
+    if (params[k]) httpParams = httpParams.set(k, params[k]);
+  });
+  return this.http.get(`${this.apiUrl}/dashboard/stats`, {
+    headers: this.getHeaders(),
+    params: httpParams
+  }).pipe(catchError(err => this.handleError(err)));
+}
 
   // ---- TIERS ----
   getTiersObs(): Observable<any[]> {
@@ -343,6 +348,110 @@ syncEcommerceRetours(type: string): Observable<any> {
   return this.http.post<any>(`${this.apiUrl}/ecommerce/sync/retours`, { type }, {
     headers: this.getHeaders()
   }).pipe(catchError(err => this.handleError(err)));
+}
+
+// ---- HELPER : décoder le JWT ────────────────────────
+getJwtPayload(): any {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
+
+getUserRole(): string {
+  return this.getJwtPayload()?.role ?? '';
+}
+
+getUserPermissions(): string[] {
+  return this.getJwtPayload()?.permissions ?? [];
+}
+
+isSuperAdmin(): boolean {
+  return this.getUserRole() === 'ROLE_SUPER_ADMIN';
+}
+
+isAdmin(): boolean {
+  return this.getUserRole() === 'ROLE_ADMIN';
+}
+
+hasPermission(permission: string): boolean {
+  if (this.isAdmin() || this.isSuperAdmin()) return true;
+  return this.getUserPermissions().includes(permission);
+}
+
+// ---- TENANTS (Super Admin) ──────────────────────────
+getTenantsObs(): Observable<any[]> {
+  return this.http.get<any[]>(`${this.apiUrl}/admin/tenants`, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+createTenantObs(data: any): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/admin/tenants`, data, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+updateTenantObs(id: number, data: any): Observable<any> {
+  return this.http.put<any>(`${this.apiUrl}/admin/tenants/${id}`, data, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+deleteTenantObs(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/admin/tenants/${id}`, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+resetTenantPasswordObs(id: number, password: string): Observable<any> {
+  return this.http.post<any>(
+    `${this.apiUrl}/admin/tenants/${id}/reset-password`,
+    { password },
+    { headers: this.getHeaders() }
+  ).pipe(catchError(err => this.handleError(err)));
+}
+
+toggleTenantStatutObs(id: number): Observable<any> {
+  return this.http.post<any>(
+    `${this.apiUrl}/admin/tenants/${id}/toggle-statut`,
+    {},
+    { headers: this.getHeaders() }
+  ).pipe(catchError(err => this.handleError(err)));
+}
+
+// ---- USERS/AGENTS (Admin Tenant) ────────────────────
+getUsersObs(): Observable<any[]> {
+  return this.http.get<any[]>(`${this.apiUrl}/settings/users`, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+createUserObs(data: any): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/settings/users`, data, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+updateUserObs(id: number, data: any): Observable<any> {
+  return this.http.put<any>(`${this.apiUrl}/settings/users/${id}`, data, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+deleteUserObs(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/settings/users/${id}`, {
+    headers: this.getHeaders()
+  }).pipe(catchError(err => this.handleError(err)));
+}
+
+// ---- AUTO-INSCRIPTION TENANT ────────────────────────
+registerTenantObs(data: any): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/register`, data)
+    .pipe(catchError(err => this.handleError(err)));
 }
 
 }

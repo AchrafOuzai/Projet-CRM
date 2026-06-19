@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
 import { Commande, DataConfig } from '../../models/commande.model';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-commandes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgIconComponent],
   templateUrl: './commandes.component.html',
   styleUrls: ['./commandes.component.scss']
 })
@@ -18,14 +19,13 @@ export class CommandesComponent implements OnInit {
   tiersFiltered: any[]  = [];
   loading    = true;
   config:    DataConfig = this.defaultConfig();
-  search      = '';
-  filterConf  = '';
-  filterLivr  = '';
-  filterAgent = '';
-  filterTiers = '';
+  search       = '';
+  filterConf   = '';
+  filterLivr   = '';
+  filterTiers  = '';
   filterSource = '';
-  showModal   = false;
-  editMode    = false;
+  showModal    = false;
+  editMode     = false;
   form: Commande = this.emptyForm();
   errors: any    = {};
 
@@ -37,12 +37,15 @@ export class CommandesComponent implements OnInit {
   commandeToLivraison: Commande | null = null;
   livraisonForm: any   = {};
   livraisonErrors: any = {};
-  statuts      = ['En transit', 'Livré', 'Échec livraison', 'Retourné'];
+  statuts       = ['En transit', 'Livré', 'Échec livraison', 'Retourné'];
   transporteurs = ['Amana', 'Aramex', 'DHL', 'CTM', 'Autre'];
 
-  // ── Email ──────────────────────────────────────────
-  sendingEmailId: number | null = null; // id de la commande en cours d'envoi
-  // ───────────────────────────────────────────────────
+  sendingEmailId: number | null = null;
+
+  // ✅ Modal email
+  showEmailModal    = false;
+  commandeForEmail: any = null;
+  emailResult: 'success' | 'error' | null = null;
 
   constructor(private ds: DataService, private cdr: ChangeDetectorRef) {}
 
@@ -58,32 +61,37 @@ export class CommandesComponent implements OnInit {
     this.load();
   }
 
-  // ── NOUVELLE MÉTHODE : envoyer email ───────────────
-  sendEmail(c: Commande) {
-    if (!c.emailClient) {
-      alert('❌ Cette commande n\'a pas d\'email client.');
-      return;
-    }
-    if (!confirm(`Envoyer un email de confirmation à ${c.emailClient} ?`)) return;
+  // ✅ Ouvre le modal email
+  openEmailModal(c: Commande) {
+    this.commandeForEmail = c;
+    this.emailResult      = null;
+    this.showEmailModal   = true;
+  }
 
-    this.sendingEmailId = c.id!;
+  closeEmailModal() {
+    this.showEmailModal   = false;
+    this.commandeForEmail = null;
+    this.emailResult      = null;
+  }
+
+  // ✅ Confirme l'envoi depuis le modal
+  confirmSendEmail() {
+    if (!this.commandeForEmail?.id) return;
+    this.sendingEmailId = this.commandeForEmail.id;
     this.cdr.detectChanges();
-
-    this.ds.sendCommandeEmailObs(c.id!).subscribe({
-      next: (res) => {
-        alert(`✅ Email envoyé à ${c.emailClient}`);
+    this.ds.sendCommandeEmailObs(this.commandeForEmail.id).subscribe({
+      next: () => {
+        this.emailResult    = 'success';
         this.sendingEmailId = null;
         this.cdr.detectChanges();
       },
-      error: (err) => {
-        const msg = err?.error?.error || 'Erreur lors de l\'envoi';
-        alert(`❌ ${msg}`);
+      error: () => {
+        this.emailResult    = 'error';
         this.sendingEmailId = null;
         this.cdr.detectChanges();
       }
     });
   }
-  // ───────────────────────────────────────────────────
 
   onTiersSearchChange() {
     const s = this.tiersSearch.toLowerCase();
@@ -99,16 +107,16 @@ export class CommandesComponent implements OnInit {
   }
 
   selectTiers(t: any) {
-    this.form.tiersId        = t.id;
-    this.tiersSearch         = t.nom;
-    this.tiersSelectedNom    = t.nom;
+    this.form.tiersId         = t.id;
+    this.tiersSearch          = t.nom;
+    this.tiersSelectedNom     = t.nom;
     this.showTiersSuggestions = false;
-    this.form.client    = t.nom       || '';
-    this.form.telephone = t.telephone || '';
-    this.form.adresse   = t.adresse   || '';
-    this.form.ville     = t.ville     || '';
-    this.form.pays      = t.pays      || '';
-    this.form.emailClient = t.email   || '';
+    this.form.client          = t.nom       || '';
+    this.form.telephone       = t.telephone || '';
+    this.form.adresse         = t.adresse   || '';
+    this.form.ville           = t.ville     || '';
+    this.form.pays            = t.pays      || '';
+    this.form.emailClient     = t.email     || '';
     this.cdr.detectChanges();
   }
 
@@ -149,35 +157,34 @@ export class CommandesComponent implements OnInit {
     this.filtered = this.commandes.filter(c => {
       const s = this.search.toLowerCase();
       const matchSearch = !s
-        || (c.client        || '').toLowerCase().includes(s)
-        || (c.designation   || '').toLowerCase().includes(s)
-        || (c.telephone     || '').includes(s)
-        || (c.ref           || '').toLowerCase().includes(s)
-        || (c.tiersNom      || '').toLowerCase().includes(s)
-        || (c.emailClient   || '').toLowerCase().includes(s)
-        || (c.ville         || '').toLowerCase().includes(s)
-        || (c.pays          || '').toLowerCase().includes(s)
-        || (c.modePaiement  || '').toLowerCase().includes(s);
+        || (c.client       || '').toLowerCase().includes(s)
+        || (c.designation  || '').toLowerCase().includes(s)
+        || (c.telephone    || '').includes(s)
+        || (c.ref          || '').toLowerCase().includes(s)
+        || (c.tiersNom     || '').toLowerCase().includes(s)
+        || (c.emailClient  || '').toLowerCase().includes(s)
+        || (c.ville        || '').toLowerCase().includes(s)
+        || (c.pays         || '').toLowerCase().includes(s)
+        || (c.modePaiement || '').toLowerCase().includes(s);
       const matchConf   = !this.filterConf   || c.confirmation === this.filterConf;
       const matchLivr   = !this.filterLivr   || c.livraison    === this.filterLivr;
-      const matchAgent  = !this.filterAgent  || c.agent        === this.filterAgent;
       const matchTiers  = !this.filterTiers  || String(c.tiersId) === this.filterTiers;
       const matchSource = !this.filterSource || c.source === this.filterSource;
-      return matchSearch && matchConf && matchLivr && matchAgent && matchTiers && matchSource;
+      return matchSearch && matchConf && matchLivr && matchTiers && matchSource;
     });
   }
 
   validate(): boolean {
     this.errors = {};
-    if (!this.form.date?.trim())        this.errors['date']          = 'La date est obligatoire';
-    if (!this.form.client?.trim())      this.errors['client']        = 'Le client est obligatoire';
-    if (!this.form.designation?.trim()) this.errors['designation']   = 'La désignation est obligatoire';
-    if (!this.form.telephone?.trim())   this.errors['telephone']     = 'Le téléphone est obligatoire';
+    if (!this.form.date?.trim())        this.errors['date']           = 'La date est obligatoire';
+    if (!this.form.client?.trim())      this.errors['client']         = 'Le client est obligatoire';
+    if (!this.form.designation?.trim()) this.errors['designation']    = 'La désignation est obligatoire';
+    if (!this.form.telephone?.trim())   this.errors['telephone']      = 'Le téléphone est obligatoire';
     else if (!/^[0-9+\s]{6,20}$/.test(this.form.telephone))
-                                        this.errors['telephone']     = 'Téléphone invalide';
-    if (!this.form.ville?.trim())       this.errors['ville']         = 'La ville est obligatoire';
+                                        this.errors['telephone']      = 'Téléphone invalide';
+    if (!this.form.ville?.trim())       this.errors['ville']          = 'La ville est obligatoire';
     if (!this.form.quantite || this.form.quantite < 1)
-                                        this.errors['quantite']      = 'La quantité doit être au moins 1';
+                                        this.errors['quantite']       = 'La quantité doit être au moins 1';
     if (!this.form.prixVenteTotal || this.form.prixVenteTotal <= 0)
                                         this.errors['prixVenteTotal'] = 'Le prix doit être supérieur à 0';
     return Object.keys(this.errors).length === 0;
@@ -260,38 +267,46 @@ export class CommandesComponent implements OnInit {
   sendToLivraison() {
     if (!this.validateLivraison()) return;
     this.ds.addLivraisonObs(this.livraisonForm).subscribe({
-      next: () => { this.closeLivraisonModal(); alert('✅ Commande envoyée vers les livraisons !'); },
+      next: () => { this.closeLivraisonModal(); },
       error: (err) => console.error('❌ livraison:', err)
     });
   }
 
-  getSourceBadge(source: string): string {
-    const map: any = { 'prestashop': 'info', 'woocommerce': 'expediee', 'manuel': 'confirmee' };
-    return map[source] || 'confirmee';
+  // ✅ Heroicons au lieu d'emojis
+  getSourceIcon(source: string): string {
+    const map: any = {
+      'prestashop':  'heroShoppingCart',
+      'woocommerce': 'heroShoppingBag',
+      'shopify':     'heroGlobeAlt',
+      'manuel':      'heroPencilSquare'
+    };
+    return map[source] || 'heroPencilSquare';
   }
 
-  getSourceIcon(source: string): string {
-    const map: any = { 'prestashop': '🛒', 'woocommerce': '🛍️', 'manuel': '✏️' };
-    return map[source] || '✏️';
+  getSourceBadge(source: string): string {
+    const map: any = {
+      'prestashop':  'info',
+      'woocommerce': 'expediee',
+      'shopify':     'payee',
+      'manuel':      'confirmee'
+    };
+    return map[source] || 'confirmee';
   }
 
   getStatutEcommerceBadge(statut: string): string {
     const map: any = {
-      'Terminée':         'livree',
-      'En cours':         'expediee',
-      'Attente paiement': 'warning',
-      'Annulée':          'annulee',
-      'Remboursée':       'retour',
-      'Confirmée':        'confirmee',
+      'Terminée': 'livree', 'En cours': 'expediee',
+      'Attente paiement': 'warning', 'Annulée': 'annulee',
+      'Remboursée': 'retour', 'Confirmée': 'confirmee',
     };
     return map[statut] || 'pas-reponse';
   }
 
   getBadgeClass(val: string): string {
     const map: any = {
-      'Livrée':    'livree',    'Confirmée': 'confirmee',
-      'Annulée':   'annulee',   'Retour':    'retour',
-      'Expédiée':  'expediee',  'Payée':     'payee'
+      'Livrée': 'livree', 'Confirmée': 'confirmee',
+      'Annulée': 'annulee', 'Retour': 'retour',
+      'Expédiée': 'expediee', 'Payée': 'payee'
     };
     return map[val] || 'pas-reponse';
   }
@@ -305,7 +320,7 @@ export class CommandesComponent implements OnInit {
       date: new Date().toISOString().split('T')[0],
       designation: '', client: '', telephone: '', adresse: '',
       ville: '', quantite: 1, prixVenteTotal: 0, typeCde: 'Site web',
-      agent: '', confirmation: '', livraison: '', ref: '',
+      confirmation: '', livraison: '', ref: '',
       commentaire: '', fraisLivraison: 30, whatsap: '',
       tiersId: undefined, source: 'manuel',
       emailClient: '', pays: '', modePaiement: '', statutEcommerce: ''
@@ -317,13 +332,38 @@ export class CommandesComponent implements OnInit {
       statutsConfirmation: ['Confirmée','Pas intéressé','Pas de réponse','Injoignable','Faux numéro','2ème appel'],
       statutsLivraison:    ['Livrée','Expédiée','Retour','Annulée','Payée','En attente'],
       villes: [
-        { nom: 'Casablanca', fraisLivraison: 25 }, { nom: 'Rabat',     fraisLivraison: 30 },
-        { nom: 'Marrakech',  fraisLivraison: 40 }, { nom: 'Fès',       fraisLivraison: 40 },
-        { nom: 'Tanger',     fraisLivraison: 45 }, { nom: 'Agadir',    fraisLivraison: 50 },
+        { nom: 'Casablanca', fraisLivraison: 25 }, { nom: 'Rabat',   fraisLivraison: 30 },
+        { nom: 'Marrakech',  fraisLivraison: 40 }, { nom: 'Fès',     fraisLivraison: 40 },
+        { nom: 'Tanger',     fraisLivraison: 45 }, { nom: 'Agadir',  fraisLivraison: 50 },
       ],
-      agents: ['Agent1','Agent2','Agent3'],
-      sites: [], admins: [], mois: [], categoriesProduits: [],
+      agents: [], sites: [], admins: [], mois: [], categoriesProduits: [],
       fraisTelephonique: 0, prixParCommandeLivree: 0
     };
+  }
+
+  exportCSV() {
+    const headers = [
+      'Date','Ref','Source','Tiers','Désignation','Client','Email',
+      'Téléphone','Ville','Pays','Quantité','Prix Total','Frais Livraison',
+      'Mode Paiement','Statut E-commerce','Confirmation','Livraison'
+    ];
+    const rows = this.filtered.map(c => [
+      c.date || '', c.ref || '', c.source || '', c.tiersNom || '',
+      c.designation || '', c.client || '', c.emailClient || '',
+      c.telephone || '', c.ville || '', c.pays || '',
+      c.quantite || 0, c.prixVenteTotal || 0, c.fraisLivraison || 0,
+      c.modePaiement || '', c.statutEcommerce || '',
+      c.confirmation || '', c.livraison || ''
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `commandes_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

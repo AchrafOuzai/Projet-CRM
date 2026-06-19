@@ -2,12 +2,11 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { NgIconComponent } from '@ng-icons/core';
 
 interface PlatformInstance {
   instanceId: string;
   type: string;
-  label: string;
-  icon: string;
   connected: boolean;
   loading: boolean;
   syncing: boolean;
@@ -30,32 +29,40 @@ interface PlatformInstance {
 @Component({
   selector: 'app-ecommerce',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgIconComponent],
   templateUrl: './ecommerce.component.html',
   styleUrls: ['./ecommerce.component.scss']
 })
 export class EcommerceComponent implements OnInit, OnDestroy {
 
-  // Config par type de plateforme
   platformConfigs: any = {
     prestashop: {
-      label: 'PrestaShop', icon: '🛒',
+      label: 'PrestaShop',
+      color: '#DF0067',
+      bgColor: '#fff0f5',
+      borderColor: '#fecdd3',
       urlPlaceholder: 'http://localhost:8080',
       apiKeyLabel: 'Clé API Webservice',
       apiKeyPlaceholder: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456',
       apiKeyHelp: 'Paramètres avancés → Webservice → Ajouter une clé'
     },
     woocommerce: {
-      label: 'WooCommerce', icon: '🟣',
+      label: 'WooCommerce',
+      color: '#7f54b3',
+      bgColor: '#f5f0ff',
+      borderColor: '#e9d5ff',
       urlPlaceholder: 'https://monshop.com',
-      apiKeyLabel: 'Mot de passe application',
-      apiKeyPlaceholder: 'xxxx xxxx xxxx xxxx xxxx xxxx',
-      apiKeyHelp: 'WordPress → Utilisateurs → Votre profil → Mots de passe d\'application → format: username:mot_de_passe_app'
+      apiKeyLabel: 'Consumer Key:Consumer Secret',
+      apiKeyPlaceholder: 'username:mot_de_passe_app',
+      apiKeyHelp: 'WordPress → Utilisateurs → Profil → Mots de passe d\'application → format: username:password'
     },
     shopify: {
-      label: 'Shopify', icon: '🟢',
+      label: 'Shopify',
+      color: '#96bf48',
+      bgColor: '#f0fff4',
+      borderColor: '#bbf7d0',
       urlPlaceholder: 'https://monshop.myshopify.com',
-      apiKeyLabel: 'Access Token',
+      apiKeyLabel: 'Admin API Access Token',
       apiKeyPlaceholder: 'shpat_xxxxxxxxxxxxxxxxxxxx',
       apiKeyHelp: 'Applications → Développer des apps → API credentials → Admin API access token'
     }
@@ -68,14 +75,11 @@ export class EcommerceComponent implements OnInit, OnDestroy {
 
   ngOnInit() { this.loadStatus(); }
 
-  ngOnDestroy() {
-    this.instances.forEach(i => this.stopPolling(i));
-  }
+  ngOnDestroy() { this.instances.forEach(i => this.stopPolling(i)); }
 
   loadStatus() {
     this.ds.getEcommerceStatus().subscribe({
       next: (res) => {
-        // Construire les instances depuis les configs sauvegardées
         this.instances = [];
         this.platformTypes.forEach(type => {
           const configs = res[type] ?? [];
@@ -86,50 +90,40 @@ export class EcommerceComponent implements OnInit, OnDestroy {
             }
           });
         });
-        // S'assurer qu'il y a au moins une instance vide par type
         this.platformTypes.forEach(type => {
-          const hasOne = this.instances.some(i => i.type === type);
-          if (!hasOne) this.instances.push(this.makeInstance(type));
+          if (!this.instances.some(i => i.type === type))
+            this.instances.push(this.makeInstance(type));
         });
         this.cdr.detectChanges();
       },
       error: () => {
-        // En cas d'erreur, créer une instance vide par type
-        this.platformTypes.forEach(type => {
-          this.instances.push(this.makeInstance(type));
-        });
+        this.platformTypes.forEach(type => this.instances.push(this.makeInstance(type)));
         this.cdr.detectChanges();
       }
     });
   }
 
   makeInstance(type: string, data?: any): PlatformInstance {
-    const cfg = this.platformConfigs[type];
     return {
-      instanceId:           data?.id ? String(data.id) : `${type}_${Date.now()}_${Math.random()}`,
+      instanceId:          data?.id ? String(data.id) : `${type}_${Date.now()}_${Math.random()}`,
       type,
-      label:                cfg.label,
-      icon:                 cfg.icon,
-      connected:            data?.connected ?? false,
-      loading:              false,
-      syncing:              false,
-      syncingCustomers:     false,
-      pollingActive:        false,
-      nextSyncIn:           300,
-      lastSync:             data?.lastSync ?? null,
-      lastOrderId:          data?.lastOrderId ?? 0,
-      lastCustomerSync:     data?.lastCustomerSync ?? null,
-      form: {
-        url:    data?.shopUrl ?? '',
-        apiKey: ''
-      },
-      errors:               {},
-      errorMessage:         '',
-      successMessage:       '',
-      syncResult:           null,
-      syncCustomersResult:  null,
-      pollingInterval:      null,
-      countdownInterval:    null
+      connected:           data?.connected ?? false,
+      loading:             false,
+      syncing:             false,
+      syncingCustomers:    false,
+      pollingActive:       false,
+      nextSyncIn:          300,
+      lastSync:            data?.lastSync ?? null,
+      lastOrderId:         data?.lastOrderId ?? 0,
+      lastCustomerSync:    data?.lastCustomerSync ?? null,
+      form: { url: data?.shopUrl ?? '', apiKey: '' },
+      errors:              {},
+      errorMessage:        '',
+      successMessage:      '',
+      syncResult:          null,
+      syncCustomersResult: null,
+      pollingInterval:     null,
+      countdownInterval:   null
     };
   }
 
@@ -138,17 +132,19 @@ export class EcommerceComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  removeInstance(instance: PlatformInstance) {
-    if (instance.connected) {
-      this.disconnect(instance, true);
-    }
-    this.stopPolling(instance);
-    this.instances = this.instances.filter(i => i.instanceId !== instance.instanceId);
+  removeInstance(p: PlatformInstance) {
+    if (p.connected) this.disconnect(p, true);
+    this.stopPolling(p);
+    this.instances = this.instances.filter(i => i.instanceId !== p.instanceId);
     this.cdr.detectChanges();
   }
 
   instancesOfType(type: string): PlatformInstance[] {
     return this.instances.filter(i => i.type === type);
+  }
+
+  connectedCount(type: string): number {
+    return this.instances.filter(i => i.type === type && i.connected).length;
   }
 
   validate(p: PlatformInstance): boolean {
@@ -158,7 +154,7 @@ export class EcommerceComponent implements OnInit, OnDestroy {
     else if (!p.form.url.startsWith('http'))
       p.errors['url'] = 'L\'URL doit commencer par http:// ou https://';
     if (!p.form.apiKey?.trim())
-      p.errors['apiKey'] = 'La clé API / mot de passe est obligatoire';
+      p.errors['apiKey'] = 'La clé API est obligatoire';
     else if (p.form.apiKey.length < 8)
       p.errors['apiKey'] = 'La valeur semble trop courte';
     return Object.keys(p.errors).length === 0;
@@ -166,21 +162,20 @@ export class EcommerceComponent implements OnInit, OnDestroy {
 
   connect(p: PlatformInstance) {
     if (!this.validate(p)) return;
-    p.loading        = true;
-    p.errorMessage   = '';
+    p.loading = true;
+    p.errorMessage = '';
     p.successMessage = '';
-
     this.ds.connectEcommerce(p.type, p.form.url, p.form.apiKey).subscribe({
       next: (res) => {
-        p.connected      = true;
-        p.loading        = false;
-        p.successMessage = '✅ ' + res.message;
+        p.connected = true;
+        p.loading = false;
+        p.successMessage = res.message;
         if (res.id) p.instanceId = String(res.id);
         this.loadStatus();
         this.cdr.detectChanges();
       },
       error: (err) => {
-        p.loading      = false;
+        p.loading = false;
         p.errorMessage = err?.error?.message || 'Connexion échouée. Vérifiez l\'URL et les credentials.';
         this.cdr.detectChanges();
       }
@@ -192,13 +187,13 @@ export class EcommerceComponent implements OnInit, OnDestroy {
     this.ds.disconnectEcommerce(p.type).subscribe({
       next: () => {
         if (!silent) {
-          p.connected           = false;
-          p.syncResult          = null;
+          p.connected = false;
+          p.syncResult = null;
           p.syncCustomersResult = null;
-          p.successMessage      = '';
-          p.errorMessage        = '';
-          p.form.url            = '';
-          p.form.apiKey         = '';
+          p.successMessage = '';
+          p.errorMessage = '';
+          p.form.url = '';
+          p.form.apiKey = '';
           this.cdr.detectChanges();
         }
       },
@@ -207,11 +202,11 @@ export class EcommerceComponent implements OnInit, OnDestroy {
   }
 
   syncOrders(p: PlatformInstance) {
-    p.syncing    = true;
+    p.syncing = true;
     p.syncResult = null;
     this.ds.syncEcommerceOrders(p.type).subscribe({
       next: (res) => {
-        p.syncing    = false;
+        p.syncing = false;
         p.syncResult = res;
         this.loadStatus();
         this.cdr.detectChanges();
@@ -221,11 +216,11 @@ export class EcommerceComponent implements OnInit, OnDestroy {
   }
 
   syncCustomers(p: PlatformInstance) {
-    p.syncingCustomers    = true;
+    p.syncingCustomers = true;
     p.syncCustomersResult = null;
     this.ds.syncEcommerceCustomers(p.type).subscribe({
       next: (res) => {
-        p.syncingCustomers    = false;
+        p.syncingCustomers = false;
         p.syncCustomersResult = res;
         this.loadStatus();
         this.cdr.detectChanges();
@@ -236,7 +231,7 @@ export class EcommerceComponent implements OnInit, OnDestroy {
 
   startPolling(p: PlatformInstance) {
     p.pollingActive = true;
-    p.nextSyncIn    = 300;
+    p.nextSyncIn = 300;
     this.syncOrders(p);
     p.pollingInterval   = setInterval(() => { this.syncOrders(p); p.nextSyncIn = 300; }, 300000);
     p.countdownInterval = setInterval(() => {

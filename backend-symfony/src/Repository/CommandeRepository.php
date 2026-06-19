@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Commande;
+use App\Entity\Tenant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -13,10 +14,41 @@ class CommandeRepository extends ServiceEntityRepository
         parent::__construct($registry, Commande::class);
     }
 
-    public function findWithFilters(array $filters): array
+    // ✅ Filtre par tenant + date + livraison pour le dashboard
+    public function findByTenantWithFilters(
+        Tenant  $tenant,
+        ?string $dateDebut,
+        ?string $dateFin,
+        ?string $livraison
+    ): array {
+        $qb = $this->createQueryBuilder('c')
+                   ->andWhere('c.tenant = :tenant')
+                   ->setParameter('tenant', $tenant);
+
+        if ($dateDebut) {
+            $qb->andWhere('c.date >= :dateDebut')
+               ->setParameter('dateDebut', new \DateTime($dateDebut));
+        }
+        if ($dateFin) {
+            $qb->andWhere('c.date <= :dateFin')
+               ->setParameter('dateFin', new \DateTime($dateFin));
+        }
+        if ($livraison) {
+            $qb->andWhere('c.livraison = :livraison')
+               ->setParameter('livraison', $livraison);
+        }
+
+        return $qb->orderBy('c.date', 'DESC')->getQuery()->getResult();
+    }
+
+    // ✅ findWithFilters existant — ajout du filtre tenant
+    public function findWithFilters(array $filters, ?Tenant $tenant = null): array
     {
         $qb = $this->createQueryBuilder('c');
 
+        if ($tenant) {
+            $qb->andWhere('c.tenant = :tenant')->setParameter('tenant', $tenant);
+        }
         if (!empty($filters['dateDebut'])) {
             $qb->andWhere('c.date >= :dateDebut')->setParameter('dateDebut', new \DateTime($filters['dateDebut']));
         }
@@ -37,34 +69,39 @@ class CommandeRepository extends ServiceEntityRepository
         }
         if (!empty($filters['search'])) {
             $qb->andWhere('c.client LIKE :search OR c.designation LIKE :search OR c.telephone LIKE :search OR c.ref LIKE :search')
-               ->setParameter('search', '%'.$filters['search'].'%');
+               ->setParameter('search', '%' . $filters['search'] . '%');
         }
 
         return $qb->orderBy('c.date', 'DESC')->getQuery()->getArrayResult();
     }
 
-    public function getStats(): array
+    // ✅ getStats tenant-aware
+    public function getStats(?Tenant $tenant = null): array
     {
-        $total = $this->count([]);
-        $confirmees = $this->count(['confirmation' => 'Confirmée']);
-        $livrees = $this->count(['livraison' => 'Livrée']);
-        $retours = $this->count(['livraison' => 'Retour']);
+        $qb = $this->createQueryBuilder('c');
+        if ($tenant) {
+            $qb->andWhere('c.tenant = :tenant')->setParameter('tenant', $tenant);
+        }
 
-        $ca = $this->createQueryBuilder('c')
-            ->select('SUM(c.prixVenteTotal)')
-            ->where('c.livraison = :livraison')
-            ->setParameter('livraison', 'Livrée')
-            ->getQuery()->getSingleScalarResult() ?? 0;
+        $commandes  = $qb->getQuery()->getResult();
+        $total      = count($commandes);
+        $confirmees = count(array_filter($commandes, fn($c) => $c->getConfirmation() === 'Confirmée'));
+        $livrees    = count(array_filter($commandes, fn($c) => $c->getLivraison()    === 'Livrée'));
+        $retours    = count(array_filter($commandes, fn($c) => $c->getLivraison()    === 'Retour'));
+        $ca         = array_sum(array_map(
+            fn($c) => $c->getLivraison() === 'Livrée' ? (float)$c->getPrixVenteTotal() : 0,
+            $commandes
+        ));
 
         return [
-            'total' => $total,
-            'confirmees' => $confirmees,
-            'livrees' => $livrees,
-            'retours' => $retours,
-            'ca' => (float) $ca,
-            'tauxConfirmation' => $total ? round($confirmees / $total * 100) : 0,
-            'tauxLivraison' => $confirmees ? round($livrees / $confirmees * 100) : 0,
-            'tauxRetour' => $livrees ? round($retours / $livrees * 100) : 0,
+            'total'            => $total,
+            'confirmees'       => $confirmees,
+            'livrees'          => $livrees,
+            'retours'          => $retours,
+            'ca'               => $ca,
+            'tauxConfirmation' => $total      ? round($confirmees / $total      * 100) : 0,
+            'tauxLivraison'    => $confirmees ? round($livrees    / $confirmees * 100) : 0,
+            'tauxRetour'       => $livrees    ? round($retours    / $livrees    * 100) : 0,
         ];
     }
 }

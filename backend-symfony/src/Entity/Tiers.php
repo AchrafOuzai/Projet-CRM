@@ -6,6 +6,7 @@ use App\Repository\TiersRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TiersRepository::class)]
+#[ORM\UniqueConstraint(name: 'uniq_tiers_referent_tenant', columns: ['referent', 'tenant_id'])]
 class Tiers
 {
     #[ORM\Id]
@@ -13,7 +14,8 @@ class Tiers
     #[ORM\Column(type: 'integer')]
     private $id;
 
-    #[ORM\Column(type: 'string', length: 20, unique: true, nullable: true)]
+    // ✅ unique: true SUPPRIMÉ — l'unicité est maintenant (referent + tenant_id)
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private $referent;
 
     #[ORM\Column(type: 'string', length: 255)]
@@ -59,10 +61,14 @@ class Tiers
     private $ville;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
-    private $source; // 'prestashop', 'woocommerce', 'manuel'
+    private $source;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private $pays;
+
+    #[ORM\ManyToOne(targetEntity: Tenant::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private $tenant = null;
 
     public function getId()                      { return $this->id; }
     public function getReferent()                { return $this->referent; }
@@ -99,4 +105,6 @@ class Tiers
     public function setSource($v)                { $this->source = $v; return $this; }
     public function getPays()                    { return $this->pays; }
     public function setPays($v)                  { $this->pays = $v; return $this; }
+    public function getTenant()                  { return $this->tenant; }
+    public function setTenant($v)                { $this->tenant = $v; return $this; }
 }

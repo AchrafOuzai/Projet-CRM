@@ -32,24 +32,36 @@ class RetourController extends AbstractController
         $this->commandeRepo = $commandeRepo;
     }
 
+    private function getCurrentTenant()
+    {
+        $user = $this->getUser();
+        if (!$user || !method_exists($user, 'getTenant')) return null;
+        return $user->getTenant();
+    }
+
     #[Route('/api/retours', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        $tenant = $this->getCurrentTenant();
         $source = $request->query->get('source');
-        $items  = $source
-            ? $this->repo->findBy(['source' => $source], ['id' => 'DESC'])
-            : $this->repo->findBy([], ['id' => 'DESC']);
 
+        $criteria = [];
+        if ($tenant) $criteria['tenant'] = $tenant;
+        if ($source) $criteria['source'] = $source;
+
+        $items = $this->repo->findBy($criteria, ['id' => 'DESC']);
         return $this->json(array_map(fn($r) => $this->serialize($r), $items));
     }
 
     #[Route('/api/retours', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $tenant = $this->getCurrentTenant();
         $data   = json_decode($request->getContent(), true);
         $retour = new Retour();
         $this->hydrate($retour, $data);
         $retour->setCreatedAt(new \DateTimeImmutable());
+        $retour->setTenant($tenant); // ── Assigner le tenant
         $this->em->persist($retour);
         $this->em->flush();
         return $this->json($this->serialize($retour), 201);
@@ -91,7 +103,6 @@ class RetourController extends AbstractController
         if (isset($data['commentaire']))      $r->setCommentaire($data['commentaire']);
         if (isset($data['ville']))            $r->setVille($data['ville']);
         if (isset($data['pays']))             $r->setPays($data['pays']);
-
         if (isset($data['tiersId'])) {
             $r->setTiers($data['tiersId'] ? $this->tiersRepo->find($data['tiersId']) : null);
         }
@@ -102,42 +113,38 @@ class RetourController extends AbstractController
 
     private function serialize(Retour $r): array
     {
-        $tiersId  = null;
-        $tiersNom = null;
+        $tiersId = $tiersNom = null;
         try {
             if ($r->getTiers()) {
                 $tiersId  = $r->getTiers()->getId();
                 $tiersNom = $r->getTiers()->getNom();
             }
         } catch (EntityNotFoundException $e) {
-            $r->setTiers(null);
-            $this->em->flush();
+            $r->setTiers(null); $this->em->flush();
         }
 
-        $commandeId  = null;
-        $commandeRef = null;
+        $commandeId = $commandeRef = null;
         try {
             if ($r->getCommande()) {
                 $commandeId  = $r->getCommande()->getId();
                 $commandeRef = $r->getCommande()->getRef();
             }
         } catch (EntityNotFoundException $e) {
-            $r->setCommande(null);
-            $this->em->flush();
+            $r->setCommande(null); $this->em->flush();
         }
 
         return [
             'id'               => $r->getId(),
             'ref'              => $r->getRef(),
-            'source'           => $r->getSource() ?? 'manuel',
+            'source'           => $r->getSource()    ?? 'manuel',
             'refCommande'      => $r->getRefCommande(),
-            'date'             => $r->getDate() ? $r->getDate()->format('Y-m-d') : null,
+            'date'             => $r->getDate()      ? $r->getDate()->format('Y-m-d') : null,
             'client'           => $r->getClient(),
             'emailClient'      => $r->getEmailClient(),
             'telephone'        => $r->getTelephone(),
             'montantRembourse' => $r->getMontantRembourse(),
             'motif'            => $r->getMotif(),
-            'statut'           => $r->getStatut() ?? 'En attente',
+            'statut'           => $r->getStatut()    ?? 'En attente',
             'commentaire'      => $r->getCommentaire(),
             'ville'            => $r->getVille(),
             'pays'             => $r->getPays(),

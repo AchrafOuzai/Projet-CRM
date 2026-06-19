@@ -1,10 +1,7 @@
 <?php
-
 namespace App\Controller;
-
-use App\Entity\ApiToken;
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Firebase\JWT\JWT;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,25 +10,25 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AuthController extends AbstractController
 {
-    private $em;
-    private $userRepository;
-    private $hasher;
+    private UserRepository $userRepository;
+    private UserPasswordHasherInterface $hasher;
+    private string $jwtSecret;
 
     public function __construct(
-        EntityManagerInterface $em,
         UserRepository $userRepository,
-        UserPasswordHasherInterface $hasher
+        UserPasswordHasherInterface $hasher,
+        string $jwtSecret
     ) {
-        $this->em = $em;
         $this->userRepository = $userRepository;
-        $this->hasher = $hasher;
+        $this->hasher         = $hasher;
+        $this->jwtSecret      = $jwtSecret;
     }
 
     #[Route('/api/login', name: 'api_login', methods: ['POST'])]
     public function login(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $email    = $data['email'] ?? '';
+        $data     = json_decode($request->getContent(), true);
+        $email    = $data['email']    ?? '';
         $password = $data['password'] ?? '';
 
         $user = $this->userRepository->findOneBy(['email' => $email]);
@@ -40,14 +37,38 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Email ou mot de passe incorrect'], 401);
         }
 
-        $token = new ApiToken($user);
-        $this->em->persist($token);
-        $this->em->flush();
+        // ✅ Blocage tenant suspendu
+        $tenant = $user->getTenant();
+        if ($tenant && $tenant->getStatut() === 'suspendu') {
+            return $this->json([
+                'error' => 'Votre compte a été suspendu. Veuillez contacter l\'administrateur.'
+            ], 403);
+        }
+
+        $now     = time();
+        $payload = [
+            'iss'         => 'ShopCRM',
+            'iat'         => $now,
+            'exp'         => $now + (365 * 24 * 3600),
+            'sub'         => $user->getUserIdentifier(),
+            'roles'       => $user->getRoles(),
+            'nom'         => $user->getNom(),
+            'role'        => $user->getRole(),
+            'tenantId'    => $tenant ? $tenant->getId()  : null,
+            'tenantNom'   => $tenant ? $tenant->getNom() : null,
+            'permissions' => $user->getPermissions() ?? [],
+        ];
+
+        $token = JWT::encode($payload, $this->jwtSecret, 'HS256');
 
         return $this->json([
-            'token' => $token->getToken(),
-            'email' => $user->getUserIdentifier(),
-            'nom'   => $user->getNom(),
+            'token'       => $token,
+            'email'       => $user->getUserIdentifier(),
+            'nom'         => $user->getNom(),
+            'role'        => $user->getRole(),
+            'tenantId'    => $tenant ? $tenant->getId()  : null,
+            'tenantNom'   => $tenant ? $tenant->getNom() : null,
+            'permissions' => $user->getPermissions() ?? [],
         ]);
     }
 
@@ -58,9 +79,22 @@ class AuthController extends AbstractController
         if (!$user) {
             return $this->json(['error' => 'Non authentifié'], 401);
         }
+
+        $tenant = method_exists($user, 'getTenant') ? $user->getTenant() : null;
+
+        // ✅ Vérification aussi sur /api/me (cas token déjà existant)
+        if ($tenant && $tenant->getStatut() === 'suspendu') {
+            return $this->json(['error' => 'Compte suspendu'], 403);
+        }
+
         return $this->json([
-            'email' => $user->getUserIdentifier(),
-            'roles' => $user->getRoles(),
+            'email'       => $user->getUserIdentifier(),
+            'roles'       => $user->getRoles(),
+            'nom'         => method_exists($user, 'getNom')         ? $user->getNom()         : '',
+            'role'        => method_exists($user, 'getRole')        ? $user->getRole()        : '',
+            'tenantId'    => $tenant ? $tenant->getId()  : null,
+            'tenantNom'   => $tenant ? $tenant->getNom() : null,
+            'permissions' => method_exists($user, 'getPermissions') ? $user->getPermissions() : [],
         ]);
     }
 }

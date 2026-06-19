@@ -21,20 +21,37 @@ class TiersController extends AbstractController
         $this->repo = $repo;
     }
 
-    #[Route('/api/tiers', methods: ['GET'])]
-    public function list(): JsonResponse
+    private function getCurrentTenant()
     {
-        $items = $this->repo->findAll();
+        $user = $this->getUser();
+        if (!$user || !method_exists($user, 'getTenant')) return null;
+        return $user->getTenant();
+    }
+
+    #[Route('/api/tiers', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        $tenant = $this->getCurrentTenant();
+
+        $criteria = [];
+        if ($tenant) $criteria['tenant'] = $tenant;
+
+        $source = $request->query->get('source');
+        if ($source) $criteria['source'] = $source;
+
+        $items = $this->repo->findBy($criteria, ['id' => 'DESC']);
         return $this->json(array_map(fn($t) => $this->serialize($t), $items));
     }
 
     #[Route('/api/tiers', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data  = json_decode($request->getContent(), true);
-        $tiers = new Tiers();
+        $tenant = $this->getCurrentTenant();
+        $data   = json_decode($request->getContent(), true);
+        $tiers  = new Tiers();
         $this->hydrate($tiers, $data);
         $tiers->setReferent($this->generateReferent());
+        $tiers->setTenant($tenant); // ── Assigner le tenant
         $this->em->persist($tiers);
         $this->em->flush();
         return $this->json($this->serialize($tiers), 201);
@@ -64,22 +81,14 @@ class TiersController extends AbstractController
     private function generateReferent(): string
     {
         $conn = $this->em->getConnection();
-        $sql  = "SELECT referent FROM tiers WHERE referent LIKE 'TI%' ORDER BY id DESC LIMIT 1";
-        $last = $conn->fetchOne($sql);
-
-        if ($last && preg_match('/^TI(\d+)$/', $last, $m)) {
-            $num = (int)$m[1] + 1;
-        } else {
-            $num = 1;
-        }
-
-        $referent = 'TI' . str_pad($num, 5, '0', STR_PAD_LEFT);
-        while ($this->repo->findOneBy(['referent' => $referent])) {
-            $num++;
-            $referent = 'TI' . str_pad($num, 5, '0', STR_PAD_LEFT);
-        }
-
-        return $referent;
+        $last = $conn->fetchOne(
+            "SELECT referent FROM tiers WHERE referent LIKE 'TI%' ORDER BY id DESC LIMIT 1"
+        );
+        $num = ($last && preg_match('/^TI(\d+)$/', $last, $m)) ? (int)$m[1] + 1 : 1;
+        $ref = 'TI' . str_pad($num, 5, '0', STR_PAD_LEFT);
+        while ($this->repo->findOneBy(['referent' => $ref]))
+            $ref = 'TI' . str_pad(++$num, 5, '0', STR_PAD_LEFT);
+        return $ref;
     }
 
     private function hydrate(Tiers $t, array $data): void
@@ -99,6 +108,7 @@ class TiersController extends AbstractController
         if (isset($data['adresse']))               $t->setAdresse($data['adresse']);
         if (isset($data['ville']))                 $t->setVille($data['ville']);
         if (isset($data['source']))                $t->setSource($data['source']);
+        if (isset($data['pays']))                  $t->setPays($data['pays']);
     }
 
     public function serialize(Tiers $t): array
@@ -107,20 +117,21 @@ class TiersController extends AbstractController
             'id'                    => $t->getId(),
             'referent'              => $t->getReferent(),
             'nom'                   => $t->getNom(),
-            'nomAlternatif'         => $t->getNomAlternatif() ?? '',
-            'codeBarres'            => $t->getCodeBarres() ?? '',
-            'codeClient'            => $t->getCodeClient() ?? '',
+            'nomAlternatif'         => $t->getNomAlternatif()         ?? '',
+            'codeBarres'            => $t->getCodeBarres()            ?? '',
+            'codeClient'            => $t->getCodeClient()            ?? '',
             'compteComptableClient' => $t->getCompteComptableClient() ?? '',
-            'commerciaux'           => $t->getCommerciaux() ?? '',
-            'codePostal'            => $t->getCodePostal() ?? '',
+            'commerciaux'           => $t->getCommerciaux()           ?? '',
+            'codePostal'            => $t->getCodePostal()            ?? '',
             'typeTiers'             => is_array($t->getTypeTiers()) ? $t->getTypeTiers() : [],
-            'telephone'             => $t->getTelephone() ?? '',
-            'natureTiers'           => $t->getNatureTiers() ?? '',
-            'etat'                  => $t->getEtat() ?? 'Actif',
-            'email'                 => $t->getEmail() ?? '',
-            'adresse'               => $t->getAdresse() ?? '',
-            'ville'                 => $t->getVille() ?? '',
-            'source'                => $t->getSource() ?? 'manuel',
+            'telephone'             => $t->getTelephone()             ?? '',
+            'natureTiers'           => $t->getNatureTiers()           ?? '',
+            'etat'                  => $t->getEtat()                  ?? 'Actif',
+            'email'                 => $t->getEmail()                 ?? '',
+            'adresse'               => $t->getAdresse()               ?? '',
+            'ville'                 => $t->getVille()                 ?? '',
+            'source'                => $t->getSource()                ?? 'manuel',
+            'pays'                  => $t->getPays()                  ?? '',
         ];
     }
 }

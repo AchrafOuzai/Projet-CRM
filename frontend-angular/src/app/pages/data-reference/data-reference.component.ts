@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { NgIconComponent } from '@ng-icons/core';
 
 @Component({
   selector: 'app-data-reference',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,NgIconComponent],
   templateUrl: './data-reference.component.html',
   styleUrls: ['./data-reference.component.scss']
 })

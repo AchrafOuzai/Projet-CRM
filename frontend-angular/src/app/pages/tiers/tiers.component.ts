@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../../services/data.service';
+import { NgIconComponent } from '@ng-icons/core';
 
 export interface Tiers {
   id?: number;
@@ -41,7 +42,7 @@ export interface Contact {
 @Component({
   selector: 'app-tiers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgIconComponent],
   templateUrl: './tiers.component.html',
   styleUrls: ['./tiers.component.scss']
 })
@@ -212,13 +213,52 @@ export class TiersComponent implements OnInit {
     }
   }
 
+  // ── EXPORT CSV ─────────────────────────────────────────
+  exportCSV() {
+    const headers = [
+      'Référent', 'Source', 'Nom', 'Nom Alternatif', 'Email',
+      'Téléphone', 'Adresse', 'Ville', 'Pays', 'Code Postal',
+      'Code Client', 'Type', 'Nature', 'État'
+    ];
+
+    const rows = this.filtered.map(t => [
+      t.referent             || '',
+      t.source               || '',
+      t.nom                  || '',
+      t.nomAlternatif        || '',
+      t.email                || '',
+      t.telephone            || '',
+      t.adresse              || '',
+      t.ville                || '',
+      t.pays                 || '',
+      t.codePostal           || '',
+      t.codeClient           || '',
+      (t.typeTiers || []).join(' + '),
+      t.natureTiers          || '',
+      t.etat                 || ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `tiers_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  // ───────────────────────────────────────────────────────
+
   getSourceBadge(source: string): string {
-    const map: any = { 'prestashop': 'info', 'woocommerce': 'expediee', 'manuel': 'confirmee' };
+    const map: any = { 'prestashop': 'info', 'woocommerce': 'expediee', 'shopify': 'payee', 'manuel': 'confirmee' };
     return map[source] || 'confirmee';
   }
 
   getSourceIcon(source: string): string {
-    const map: any = { 'prestashop': '🛒', 'woocommerce': '🛍️', 'manuel': '✏️' };
+    const map: any = { 'prestashop': '🛒', 'woocommerce': '🛍️', 'shopify': '🏪', 'manuel': '✏️' };
     return map[source] || '✏️';
   }
 

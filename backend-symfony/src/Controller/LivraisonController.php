@@ -28,9 +28,17 @@ class LivraisonController extends AbstractController
         $this->commandeRepo = $commandeRepo;
     }
 
+    private function getCurrentTenant()
+    {
+        $user = $this->getUser();
+        if (!$user || !method_exists($user, 'getTenant')) return null;
+        return $user->getTenant();
+    }
+
     #[Route('/api/livraisons', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        $tenant = $this->getCurrentTenant();
         $page   = max(1, (int)$request->query->get('page', 1));
         $limit  = 10;
         $offset = ($page - 1) * $limit;
@@ -43,9 +51,17 @@ class LivraisonController extends AbstractController
             ->leftJoin('l.commande', 'c')
             ->orderBy('l.id', 'DESC');
 
+        // ── Filtrage par tenant via la commande associée ──
+        if ($tenant) {
+            $qb->andWhere('c.tenant = :tenant')
+               ->setParameter('tenant', $tenant);
+        }
+
         if ($search) {
-            $qb->andWhere('l.numeroSuivi LIKE :s OR l.transporteur LIKE :s OR c.ref LIKE :s OR c.client LIKE :s')
-               ->setParameter('s', '%' . $search . '%');
+            $qb->andWhere(
+                'l.numeroSuivi LIKE :s OR l.transporteur LIKE :s
+                 OR c.ref LIKE :s OR c.client LIKE :s'
+            )->setParameter('s', '%' . $search . '%');
         }
 
         if ($statut) {
@@ -133,10 +149,7 @@ class LivraisonController extends AbstractController
 
     private function serialize(Livraison $l): array
     {
-        $commandeId     = null;
-        $commandeRef    = null;
-        $commandeClient = null;
-
+        $commandeId = $commandeRef = $commandeClient = null;
         try {
             $commande = $l->getCommande();
             if ($commande) {
@@ -147,7 +160,6 @@ class LivraisonController extends AbstractController
         } catch (EntityNotFoundException $e) {
             $l->setCommande(null);
         }
-
         $date = $l->getDateExpedition();
         return [
             'id'             => $l->getId(),
