@@ -31,14 +31,28 @@ jobs:
           php-version: '8.1'
           extensions: pdo, pdo_mysql, mbstring, curl
 
+      # ✅ Crée un .env minimal AVANT composer install pour éviter l'échec du post-install-cmd
+      - name: Create .env file
+        working-directory: backend-symfony
+        run: |
+          echo "APP_ENV=test" > .env
+          echo "APP_SECRET=testsecretkey123456789012345678" >> .env
+          echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0" >> .env
+
+      # ✅ --no-scripts évite le cache:clear automatique avant que tout soit prêt
       - name: Install dependencies
         working-directory: backend-symfony
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Check PHP syntax
         working-directory: backend-symfony
-        run: |
-          find src -name "*.php" -print0 | xargs -0 -n1 php -l
+        run: find src -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Clear cache
+        working-directory: backend-symfony
+        env:
+          APP_ENV: test
+        run: php bin/console cache:clear --env=test
 
       - name: Run database migrations
         working-directory: backend-symfony
@@ -55,7 +69,7 @@ jobs:
         env:
           DATABASE_URL: mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0
           APP_ENV: test
-        run: php bin/phpunit || echo "No tests configured yet"
+        run: php bin/phpunit --testdox
 
   frontend-build:
     name: Angular Frontend
