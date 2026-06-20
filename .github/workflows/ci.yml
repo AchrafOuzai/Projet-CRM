@@ -40,12 +40,12 @@ jobs:
           php-version: '8.1'
           extensions: pdo, pdo_mysql, mbstring, curl
 
-      - name: Create .env file
+      # IMPORTANT: clean DB for fresh migrations
+      - name: Reset database
         working-directory: backend-symfony
         run: |
-          echo "APP_ENV=test" > .env
-          echo "APP_SECRET=testsecretkey123456789012345678" >> .env
-          echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0" >> .env
+          php bin/console doctrine:database:drop --force --if-exists --env=test
+          php bin/console doctrine:database:create --env=test
 
       - name: Install dependencies
         working-directory: backend-symfony
@@ -61,13 +61,12 @@ jobs:
 
       - name: Run database migrations
         working-directory: backend-symfony
-        run: |
-          php bin/console doctrine:database:create --if-not-exists --env=test
-          php bin/console doctrine:migrations:migrate --no-interaction --env=test
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
 
       - name: Run PHPUnit tests
         working-directory: backend-symfony
         run: php bin/phpunit --testdox
+
 
   frontend-build:
     name: Angular Frontend
@@ -90,6 +89,7 @@ jobs:
       - name: Build Angular
         working-directory: frontend-angular
         run: npm run build -- --configuration production
+
 
   docker-build:
     name: Docker Build Verification
