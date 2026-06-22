@@ -16,6 +16,7 @@ jobs:
       APP_ENV: test
       APP_SECRET: testsecretkey123456789012345678
       DATABASE_URL: mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0
+      MESSENGER_TRANSPORT_DSN: sync://
 
     services:
       mysql:
@@ -50,6 +51,7 @@ jobs:
           echo "APP_ENV=test" > .env
           echo "APP_SECRET=testsecretkey123456789012345678" >> .env
           echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0" >> .env
+          echo "MESSENGER_TRANSPORT_DSN=sync://" >> .env
 
       - name: Reset database
         working-directory: backend-symfony
