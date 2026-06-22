@@ -44,6 +44,13 @@ jobs:
         working-directory: backend-symfony
         run: composer install --no-interaction --prefer-dist --no-scripts
 
+      - name: Create .env file
+        working-directory: backend-symfony
+        run: |
+          echo "APP_ENV=test" > .env
+          echo "APP_SECRET=testsecretkey123456789012345678" >> .env
+          echo "DATABASE_URL=mysql://root:root@127.0.0.1:3306/crm_ecommerce_test?serverVersion=8.0" >> .env
+
       - name: Reset database
         working-directory: backend-symfony
         run: |
