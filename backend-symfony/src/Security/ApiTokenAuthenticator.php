@@ -32,6 +32,11 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
 
     public function supports(Request $request): ?bool
     {
+        // ✅ Ne jamais tenter d'authentifier une requête preflight CORS
+        if ($request->getMethod() === 'OPTIONS') {
+            return false;
+        }
+
         return $request->headers->has('Authorization')
             && str_starts_with($request->headers->get('Authorization'), 'Bearer ');
     }
@@ -42,7 +47,6 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
         $token      = substr($authHeader, 7); // Enlève "Bearer "
 
         try {
-            // Décode et vérifie le JWT
             $payload = JWT::decode($token, new Key($this->jwtSecret, 'HS256'));
             $email   = $payload->sub;
 
@@ -54,7 +58,6 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
             throw new CustomUserMessageAuthenticationException('Token JWT invalide');
         }
 
-        // Vérifie que l'utilisateur existe toujours en base
         $user = $this->userRepository->findOneBy(['email' => $email]);
         if (!$user) {
             throw new CustomUserMessageAuthenticationException('Utilisateur introuvable');
@@ -67,7 +70,7 @@ class ApiTokenAuthenticator extends AbstractAuthenticator implements Authenticat
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        return null; // Continue la requête normalement
+        return null;
     }
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
