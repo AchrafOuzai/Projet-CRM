@@ -65,9 +65,9 @@ jobs:
         working-directory: backend-symfony
         run: find src -name "*.php" -print0 | xargs -0 -n1 php -l
 
-      - name: Run database migrations
+      - name: Create database schema
         working-directory: backend-symfony
-        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
+        run: php bin/console doctrine:schema:create --env=test
 
       - name: Run PHPUnit tests
         working-directory: backend-symfony
