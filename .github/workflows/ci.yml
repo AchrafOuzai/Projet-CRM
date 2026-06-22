@@ -40,16 +40,15 @@ jobs:
           php-version: '8.1'
           extensions: pdo, pdo_mysql, mbstring, curl
 
-      # IMPORTANT: clean DB for fresh migrations
+      - name: Install dependencies
+        working-directory: backend-symfony
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
       - name: Reset database
         working-directory: backend-symfony
         run: |
           php bin/console doctrine:database:drop --force --if-exists --env=test
           php bin/console doctrine:database:create --env=test
-
-      - name: Install dependencies
-        working-directory: backend-symfony
-        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Clear Symfony cache
         working-directory: backend-symfony
