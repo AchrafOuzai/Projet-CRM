@@ -17,7 +17,7 @@ RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 COPY . .
 RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www/symfony
-RUN chmod -R 755 /var/www/symfony/var
+RUN mkdir -p /var/www/symfony/var && chmod -R 755 /var/www/symfony/var
 
 EXPOSE 9000
 CMD ["php-fpm"]
